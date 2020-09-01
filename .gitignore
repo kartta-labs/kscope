@@ -1,0 +1,11 @@
+sample_models/
+external_buildings/
+publish
+excluded_models.js
+external_models.js
+footprint.html
+footprint.js
+kartta.json
+randoms.js
+models.js
+settings.js
