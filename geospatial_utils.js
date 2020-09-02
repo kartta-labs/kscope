@@ -49,6 +49,11 @@ class GeoPoint {
     this.longitudeInMicroDegrees = longitudeInMicroDegrees;
   }
 
+  resetFromMecator(mercatorX, mercatorY) {
+      this.latitudeInMicroDegrees = (2.0 * Math.atan(Math.exp(Math.PI * mercatorY) * 180/Math.PI) - 90) * 1e6;
+      this.longitudeInMicroDegrees = mercatorX * 180 * 1e6;
+  }
+
   /**
    * Returns true if two GeoPoints are equal.
    * @param {!GeoPoint} geoPoint
@@ -133,4 +138,60 @@ class GeoPoint {
   }
 }
 
+class GeoConverter {
+  /**
+   * Converts a way (array of points) to an array of GeoPoints.
+   * @param {!Array<!Array<number>>} way An array of geographic points.
+   * @return {!Array<!GeoPoint>}
+   */
+
+  static wayToGeoPointArray(way) {
+      const toMicroDegree = 1e6;
+      return way.map((point) => {
+      return new GeoPoint(point[1] * toMicroDegree, point[0] * toMicroDegree);
+      });
+  }
+
+  /**
+   * Converts an array of geopoints to an array of scene coordinates.
+   * @param {!Array<!Array<number>>} geoPointArray An array of geopoints.
+   * @return {!Array<!GeoPoint>}
+   */
+  static geoPointArrayToSceneCoordinatesArray(geoPointArray, sceneOrigin) {
+      return geoPointArray.map((point) => {
+      const x = (point.getMercatorXfromLongitude() -
+                  sceneOrigin.getMercatorXfromLongitude()) /
+          point.getOneMeterInMercatorUnit();
+      const z = -(point.getMercatorYfromLatitude() -
+                  sceneOrigin.getMercatorYfromLatitude()) /
+          point.getOneMeterInMercatorUnit();
+      return new THREE.Vector2(x, z);
+      });
+  }
+
+  /**
+   * Converts array scene coordinates to a path.
+   * @param {Object} geoPointArray
+   * @return {Object}
+   */
+  static sceneCoordinatesArrayToPaths(coordinates) {
+      var path = new THREE.Path();
+      path.currentPoint.set(coordinates[0].x, -coordinates[0].y);
+      for(let i=1; i<coordinates.length ; i++) {
+      path.lineTo(coordinates[i].x, -coordinates[i].y);
+      }
+      return path;
+  }
+
+  /**
+   * Converts an array of GeoPoints to a shape.
+   * @param {!Array<!GeoPoint>} geoPointArray
+   * @return {!THREE.Shape}
+   */
+  static geoPointArrayToShape(geoPointArray, sceneOrigin) {
+      return new THREE.Shape(GeoConverter.geoPointArrayToSceneCoordinatesArray(geoPointArray, sceneOrigin));
+  }
+}
+
 export {GeoPoint};
+export {GeoConverter};
