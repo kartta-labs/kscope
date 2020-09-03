@@ -50,7 +50,7 @@ class GeoPoint {
   }
 
   resetFromMecator(mercatorX, mercatorY) {
-      this.latitudeInMicroDegrees = (2.0 * Math.atan(Math.exp(Math.PI * mercatorY) * 180/Math.PI) - 90) * 1e6;
+      this.latitudeInMicroDegrees = (2.0 * Math.atan(Math.exp(Math.PI * mercatorY))*180/Math.PI - 90)*1e6;
       this.longitudeInMicroDegrees = mercatorX * 180 * 1e6;
   }
 

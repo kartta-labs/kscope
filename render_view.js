@@ -7,7 +7,7 @@ class RenderView {
   BRIGHTNESS_OF_EXTRUDED_MODELS = 0.6;
   COLOR_VARIATION_OF_EXTRUDED_MODELS = 0.1;
   AVERAGE_STOREY_HEIGHT_METERS = 4.3;
-  processesFeatures = false;
+  processedFeatures = false;
   constructor(settings) {
     this.skyboxImages = [
       "images/py.png", // up
@@ -79,7 +79,7 @@ class RenderView {
           console.log('feature is not supported for rendering.');
         }
       }
-      this.processesFeatures = true;
+      this.processedFeatures = true;
     };
 
   }
@@ -182,7 +182,6 @@ class RenderView {
     }
     this.ground.holes = [];
     this.updateGround(this.ground);
-    console.log("added ground")
     this.scene.add(this.ground.object3d);
   }
   
@@ -258,9 +257,7 @@ class RenderView {
    * @param {number} numberOfLevels
    */
   loadFeature(feature, numberOfLevels, options) {
-    console.log("loadFeature")
     options = options || {};
-    console.log(this.sceneOrigin)
     const shape =
       GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
     const MINIMUM_EXTRUSION_METERS = 0.01;
@@ -270,6 +267,9 @@ class RenderView {
                                   -MINIMUM_EXTRUSION_METERS,
       bevelEnabled: false
     };
+    if (feature.properties['height']) {
+      extrudeSettings.depth = -parseFloat(feature.properties['height']);
+    }
     if (options.extrudeDepth) {
       extrudeSettings.depth = options.extrudeDepth;
     }

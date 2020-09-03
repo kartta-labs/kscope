@@ -153,21 +153,6 @@ function initialize() {
         birdsEyeView = !birdsEyeView;
         onWindowResize();
         break;
-      case 50: // 2
-        renderView = renderView2
-        renderView.setSceneYear();
-        currentScene.remove(controls.getObject());
-        currentScene = renderView.scene;
-        currentScene.add(controls.getObject());
-
-        break;
-      case 51: // 2
-        renderView = renderView1
-        renderView.setSceneYear();
-        currentScene.remove(controls.getObject());
-        currentScene = renderView.scene;
-        currentScene.add(controls.getObject());
-        break;
       case 48:  // 0
         debugMode = !debugMode;
         renderView.toggleTextures();
@@ -271,12 +256,20 @@ function animate() {
       intersected = null;
     }
   }
+  slippy.watch(controls.getObject().position,
+  () => {
+    renderView = slippy.currentRenderView;
+    renderView.setSceneYear();
+    currentScene.remove(controls.getObject());
+    currentScene = renderView.scene;
+    currentScene.add(controls.getObject());
+  });
 }
 
 class Slippy {
   constructor(settings) {
-    this.widthMercatorX = 0.00001;
-    this.heightMercatorY = 0.00001;
+    this.widthMercatorX = 0.00002;
+    this.heightMercatorY = this.widthMercatorX;
     this.overlap = 0.25;
 
     this.settings = settings;
@@ -297,28 +290,23 @@ class Slippy {
   createTileBbox(position) {
     const mercatorX = position.getMercatorXfromLongitude();
     const mercatorY = position.getMercatorYfromLatitude();
-    console.log('mercatorY:' + mercatorY)
 
     const nonOverlappingTileWidthMercatorX = (1.0 - this.overlap) * this.widthMercatorX;
     const nonOverlappingTileHeightMercatorY = (1.0 - this.overlap) * this.heightMercatorY;
-    console.log('nonOverlappingTileHeightMercatorY:' + nonOverlappingTileHeightMercatorY)
 
     const tileCenterMercatorX = (Math.floor(mercatorX / nonOverlappingTileWidthMercatorX) + 0.5) * nonOverlappingTileWidthMercatorX;
     const tileCenterMercatorY = (Math.floor(mercatorY / nonOverlappingTileHeightMercatorY) + 0.5) * nonOverlappingTileHeightMercatorY;
-    console.log('tileCenterMercatorY:' + tileCenterMercatorY)
 
     const bottomLeftMercatorX = tileCenterMercatorX - this.widthMercatorX/2;
-    const bottomLeftMercatorY = tileCenterMercatorY - this.widthMercatorY/2;
+    const bottomLeftMercatorY = tileCenterMercatorY - this.heightMercatorY/2;
     const topRightMercatorX = tileCenterMercatorX + this.widthMercatorX/2;
-    const topRightMercatorY = tileCenterMercatorY + this.widthMercatorY/2;
+    const topRightMercatorY = tileCenterMercatorY + this.heightMercatorY/2;
     const bottomLeft = new GeoPoint(0,0);
     bottomLeft.resetFromMecator(bottomLeftMercatorX, bottomLeftMercatorY);
-    console.log('bottomLeft' + bottomLeft.getLatitudeInDegrees())
     const topRight = new GeoPoint(0,0);
     topRight.resetFromMecator(topRightMercatorX, topRightMercatorY);
 
     const bbox = [bottomLeft.getLongitudeInDegrees(), bottomLeft.getLatitudeInDegrees(), topRight.getLongitudeInDegrees(), topRight.getLatitudeInDegrees()].join();
-    console.log(bbox);
     return bbox;
   }
 
@@ -331,7 +319,6 @@ class Slippy {
   }
 
   deleteRenderView(center) {
-    console.log('Deleting renderview is not implemented.');
     return;
     const bbox = this.createTileBbox(center);
     const renderView = this.renderViews[bbox];
@@ -340,20 +327,38 @@ class Slippy {
     // materials, textures, etc.
   }
 
-  setRenderViewIfReady(bbox) {
-    if (!bbox in this.renderViews) {
-        createNewRenderView(this.currentTileCenter);
-    }
-    if (this.renderViews[bbox].processedFeatures){
+  setRenderViewIfReady(geoPosition) {
+    const bbox = this.createTileBbox(geoPosition)
+    if (!(bbox in this.renderViews)) {
+        this.createNewRenderView(geoPosition);
+    }// else if (this.renderViews[bbox].processedFeatures){
       this.currentRenderView = this.renderViews[bbox];
       this.currentBbox = bbox;
-    }
+    //}
   }
 
-  watch(position) {
-    const bbox = this.createTileBbox(position)
+  static metersToGeoPoint(positionInMeters, originMeters, originGeoPoint) {
+    const deltaXMeters = positionInMeters['x'] - originMeters['x'];
+    // The z component of vector positionInMeters is horizontal.
+    // The -y in world coordinates is northbound.
+    const deltaYMeters = -positionInMeters['z'] - originMeters['y'];
+    const deltaMercatorX = deltaXMeters * originGeoPoint.getOneMeterInMercatorUnit();
+    const deltaMercatorY = deltaYMeters * originGeoPoint.getOneMeterInMercatorUnit();
+
+    const mercatorX = originGeoPoint.getMercatorXfromLongitude() + deltaMercatorX;
+    const mercatorY = originGeoPoint.getMercatorYfromLatitude() + deltaMercatorY;
+    const geo = new GeoPoint(0,0);
+    geo.resetFromMecator(mercatorX, mercatorY);
+    return geo;
+  }
+
+  watch(positionInMeters, callback) {
+    const geoPosition = Slippy.metersToGeoPoint(positionInMeters, {'x':0, 'y':0}, this.currentRenderView.sceneOrigin);
+    const bbox = this.createTileBbox(geoPosition)
     if (bbox != this.currentBbox){
-      this.setRenderViewIfReady(bbox);
+      this.setRenderViewIfReady(geoPosition);
+      callback();
+      this.currentBbox = bbox;
     }
   }
 
@@ -377,7 +382,6 @@ class Slippy {
 const slippy = new Slippy(settings)
 renderView = slippy.currentRenderView;
 currentScene = renderView.scene;
-
 initialize();
 
 animate();
