@@ -73,6 +73,7 @@ let settings = {
   'fieldOfView': 45.0,
   'nearPlane': 1.0,
   'farPlane': 5000,
+  'tileWidthInMercator': 0.00002,
 //  'shadows': true,
 //  'lights': shadowLights,
   'shadows': false,

@@ -21,7 +21,7 @@ import {GeoPoint} from "./geospatial_utils.js";
 
 class Slippy {
     constructor(settings) {
-      this.widthMercatorX = 0.00002;
+      this.widthMercatorX = settings.tileWidthInMercator;// 0.00002;
       this.heightMercatorY = this.widthMercatorX;
       this.overlap = 0.25;
   
