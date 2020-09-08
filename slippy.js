@@ -24,14 +24,11 @@ class Slippy {
       this.widthMercatorX = settings.tileWidthInMercator;// 0.00002;
       this.heightMercatorY = this.widthMercatorX;
       this.overlap = 0.25;
-  
+      this.renderViews = {};
       this.settings = settings;
       this.currentTileCenter = Slippy.toGeoPoint(settings.origin);
+      this.currentRenderView = this.createNewRenderView(this.currentTileCenter);
       this.currentBbox = this.createTileBbox(this.currentTileCenter);
-      this.currentRenderView = new RenderView(this.settings);
-      Slippy.fetchFeatures(this.currentRenderView, this.currentBbox);
-      this.renderViews = {};
-      this.renderViews[this.currentBbox] = this.currentRenderView;
     }
   
     static toGeoPoint(point) {
@@ -64,7 +61,10 @@ class Slippy {
     }
   
     createNewRenderView(center) {
-      const renderView = new RenderView(this.settings);
+      // Do a deep copy.
+      const settings = JSON.parse(JSON.stringify(this.settings));
+      settings.tileCenter = center;
+      const renderView = new RenderView(settings);
       const bbox = this.createTileBbox(center);
       Slippy.fetchFeatures(renderView, bbox);
       this.renderViews[bbox] = renderView;

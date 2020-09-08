@@ -17,9 +17,6 @@
  * real locations. It statically loads the 3D models and then puts them in their
  * Mercator coordinates, according to their latitude and longitude values.
  */
-
-import {RenderView} from "./render_view.js";
-import {GeoPoint} from "./geospatial_utils.js";
 import {Slippy} from "./slippy.js";
 
 // Global variables to setup the scene.
@@ -47,11 +44,6 @@ const groundMouse = { x: 0, y: 0, z: 0};
 let intersected;
 let decreaseFocus = false;
 let increaseFocus = false;
-// Brightness of models is a number between 0 and 1, which sets the average
-// brightness of 3D models color. Brightness is defined as the average of rgb
-// value of a color.
-//const BRIGHTNESS_OF_MODELS = 0.9;
-
 
 let debugMode = false;
 
@@ -283,7 +275,6 @@ function animate() {
 
 let params = (new URL(document.location)).searchParams;
 if(params.has('center')){
-  console.log(params.get('center'));
   const [lat, lon] = params.get('center').split(',');
   if(!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lon))) {
     const toMicro = 1e6;
