@@ -78,6 +78,10 @@ class RenderView {
           this.loadFeature(features[i], numberOfLevels, {
             map: numberOfLevels > 0 ? checkedTexture : undefined
           });
+        } else if (features[i].properties['building:part']) {
+          this.loadFeature(features[i], numberOfLevels, {
+            map: numberOfLevels > 0 ? checkedTexture : undefined
+          });
         } else if (features[i].properties['sidewalk']) {
           // We currently use the same function to load and minimally extrude
           // sidewalks, that we use for buildings. This works by assuming sidewalks
@@ -272,31 +276,35 @@ class RenderView {
    * @param {number} numberOfLevels
    */
   loadFeature(feature, numberOfLevels, options) {
-    options = options || {};
-    const shape =
-      GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
-    const MINIMUM_EXTRUSION_METERS = 0.01;
+    try{
+      options = options || {};
+      const shape =
+        GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
+      const MINIMUM_EXTRUSION_METERS = 0.01;
 
-    const extrudeSettings = {
-      depth: numberOfLevels > 0 ? -numberOfLevels * this.AVERAGE_STOREY_HEIGHT_METERS :
-                                  -MINIMUM_EXTRUSION_METERS,
-      bevelEnabled: false
-    };
-    if (feature.properties['height']) {
-      extrudeSettings.depth = -parseFloat(feature.properties['height']);
-    }
-    if (options.extrudeDepth) {
-      extrudeSettings.depth = options.extrudeDepth;
-    }
-    const mesh = this.shapeToMesh(shape, extrudeSettings, options);
-    if (!this.idToMesh[feature.properties.id]) {
-      mesh.name = feature.properties.id;
-      this.idToMesh[mesh.name] = mesh;
-      RenderView.setVisibility(
-        RenderView.extractYearFromDate(feature.properties.start_date),
-        RenderView.extractYearFromDate(feature.properties.end_date), mesh
-      );
-      this.scene.add(mesh);
+      const extrudeSettings = {
+        depth: numberOfLevels > 0 ? -numberOfLevels * this.AVERAGE_STOREY_HEIGHT_METERS :
+                                    -MINIMUM_EXTRUSION_METERS,
+        bevelEnabled: false
+      };
+      if (feature.properties['height']) {
+        extrudeSettings.depth = -parseFloat(feature.properties['height']);
+      }
+      if (options.extrudeDepth) {
+        extrudeSettings.depth = options.extrudeDepth;
+      }
+      const mesh = this.shapeToMesh(shape, extrudeSettings, options);
+      if (!this.idToMesh[feature.properties.id]) {
+        mesh.name = feature.properties.id;
+        this.idToMesh[mesh.name] = mesh;
+        RenderView.setVisibility(
+          RenderView.extractYearFromDate(feature.properties.start_date),
+          RenderView.extractYearFromDate(feature.properties.end_date), mesh
+        );
+        this.scene.add(mesh);
+      }
+    } catch (e) {
+      console.log('Error while loading feature '+ feature.id + ': ' +e);
     }
   }
 
