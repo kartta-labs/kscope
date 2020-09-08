@@ -281,6 +281,20 @@ function animate() {
   });
 }
 
+let params = (new URL(document.location)).searchParams;
+if(params.has('center')){
+  console.log(params.get('center'));
+  const [lat, lon] = params.get('center').split(',');
+  if(!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lon))) {
+    const toMicro = 1e6;
+    settings.origin = {
+      'latitudeInMicroDegrees': parseFloat(lat) * toMicro,
+      'longitudeInMicroDegrees': parseFloat(lon) * toMicro,
+      'altitudeInMeters': 0
+    }
+  }
+}
+
 const slippy = new Slippy(settings)
 renderView = slippy.currentRenderView;
 currentScene = renderView.scene;
