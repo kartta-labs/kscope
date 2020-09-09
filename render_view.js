@@ -158,13 +158,12 @@ class RenderView {
       });
     }
     // skybox
+    const center = GeoConverter.geoPointArrayToSceneCoordinatesArray([settings.tileCenter], this.sceneOrigin)[0];
     this.loadSkyboxTextures(() => {
       // Skybox cube size is, conservatively, set to the half of the Camera
       // frustrum far plane, such that the skybox is always visible.
       const geometry =
           new THREE.BoxGeometry(farPlane / 2.0, farPlane / 2.0, farPlane / 2.0);
-
-      const center = GeoConverter.geoPointArrayToSceneCoordinatesArray([settings.tileCenter], this.sceneOrigin)[0];
       const cube = new THREE.Mesh(geometry, [
         this.skyboxImages[2],
         this.skyboxImages[3],
@@ -201,6 +200,9 @@ class RenderView {
     }
     this.ground.holes = [];
     this.updateGround(this.ground);
+    this.ground.object3d.position.x = center.x;
+    this.ground.object3d.position.y = 0;
+    this.ground.object3d.position.z = center.y;
     this.scene.add(this.ground.object3d);
   }
   

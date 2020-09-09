@@ -20,30 +20,22 @@
 import {Slippy} from "./slippy.js";
 
 // Global variables to setup the scene.
-let camera, container, controls, currentScene, renderView;
+let camera, container, mapControls, currentScene, renderView, slippy;
 
 // Global variables for rendering.
 let renderer, raycaster;
 
+
 // Global variables for the pointer lock controler.
-let moveForward = false;
-let moveBackward = false;
 let moveForwardInTime = false;
 let moveBackwardInTime = false;
-let moveLeft = false;
-let moveRight = false;
 
-let birdsEyeView = false;
+let geoOrigin, geoPosition, positionInMeter;
+
 const eyeHeightInMeters = 1.7;
-const birdsHeightInMeters = 200;
-let prevTime = performance.now();
-const velocity = new THREE.Vector3();
-const direction = new THREE.Vector3();
 const mouse = { x: 0, y: 0 };
 const groundMouse = { x: 0, y: 0, z: 0};
 let intersected;
-let decreaseFocus = false;
-let increaseFocus = false;
 
 let debugMode = false;
 
@@ -83,22 +75,15 @@ function initialize() {
   camera.position.set(0, eyeHeightInMeters, -10);
   // camera.lookAt(currentScene.position);
 
-  controls = new THREE.PointerLockControls(camera, document.body);
-  currentScene.add(controls.getObject());
+  mapControls = new THREE.MapControls(camera, document.body);
+  mapControls.screenSpacePanning = true;
 
-  const blocker = document.getElementById('blocker');
-  const instructions = document.getElementById('instructions');
-  instructions.addEventListener('click', () => {
-    controls.lock();
-  }, false);
-  controls.addEventListener('lock', () => {
-    instructions.style.display = 'none';
-    blocker.style.display = 'none';
-  });
-  controls.addEventListener('unlock', () => {
-    blocker.style.display = 'block';
-    instructions.style.display = '';
-  });
+  mapControls.minDistance = 100;
+  mapControls.maxDistance = 500;
+  mapControls.keyPanSpeed = 70;
+
+  mapControls.maxPolarAngle = Math.PI / 2 - 0.01;
+  currentScene.add(camera);
 
   raycaster = new THREE.Raycaster();
   container = document.createElement('div');
@@ -111,55 +96,8 @@ function initialize() {
     mouse.y = -((event.clientY-container.offsetTop) / window.innerHeight) * 2 + 1;
   }, false);
 
-  const keyEvent = (event, keyIsDown) => {
-    switch (event.keyCode) {
-      case 38:  // up
-      case 87:  // w
-        moveForward = keyIsDown;
-        break;
-      case 37:  // left
-      case 65:  // a
-        moveLeft = keyIsDown;
-        break;
-      case 40:  // down
-      case 83:  // s
-        moveBackward = keyIsDown;
-        break;
-      case 39:  // right
-      case 68:  // d
-        moveRight = keyIsDown;
-        break;
-      case 189:  // -
-        decreaseFocus = keyIsDown;
-        break;
-      case 187:  // +
-        increaseFocus = keyIsDown;
-        break;
-    }
-  };
-
-  document.addEventListener('keydown', (event) => {
-    keyEvent(event, true);
-  }, false);
-  document.addEventListener('keyup', (event) => {
-    keyEvent(event, false);
-  }, false);
-
   document.addEventListener('keypress', (event) => {
     switch (event.keyCode) {
-      case 33:  // !
-        birdsEyeView = !birdsEyeView;
-        if (!birdsEyeView) {
-          camera.position.x = groundMouse.x;
-          camera.position.y = groundMouse.y;
-          camera.position.z = groundMouse.z;
-        }
-        onWindowResize();
-        break;
-      case 49:  // 1
-        birdsEyeView = !birdsEyeView;
-        onWindowResize();
-        break;
       case 48:  // 0
         debugMode = !debugMode;
         renderView.toggleTextures();
@@ -192,20 +130,6 @@ function onWindowResize() {
 /** Runs every frame to animate the scene. */
 function animate() {
   requestAnimationFrame(animate);
-  if (controls.isLocked === true) {
-    const time = performance.now();
-    const delta = (time - prevTime) / 1000;
-    velocity.x -= velocity.x * 10.0 * delta;
-    velocity.z -= velocity.z * 10.0 * delta;
-    direction.z = Number(moveForward) - Number(moveBackward);
-    direction.x = Number(moveRight) - Number(moveLeft);
-    direction.normalize();
-    if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
-    if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
-    controls.moveRight(-velocity.x * delta);
-    controls.moveForward(-velocity.z * delta);
-    prevTime = time;
-  }
 
   if (moveForwardInTime) {
     yearRangeSlider.value++;
@@ -219,21 +143,8 @@ function animate() {
     moveBackwardInTime = false;
   }
 
-  if (increaseFocus) {
-    const FOCUS_INCREMENT = 0.005;
-    camera.focus *= 1.0 + FOCUS_INCREMENT;
-    console.log(Math.round(camera.focus * 100) / 100);
-  }
-
-  if (decreaseFocus) {
-    camera.focus *= 1.0 - FOCUS_INCREMENT;
-    console.log(Math.round(camera.focus * 100) / 100);
-  }
-
   renderer.render(currentScene, camera);
-
-  camera.position.y = birdsEyeView ? birdsHeightInMeters : eyeHeightInMeters;
-
+  mapControls.update();
   // Find intersections.
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(currentScene.children, true);
@@ -263,14 +174,22 @@ function animate() {
       intersected = null;
     }
   }
-  slippy.watch(controls.getObject().position,
+  slippy.watch(camera.position,
   () => {
     renderView = slippy.currentRenderView;
     renderView.setSceneYear();
-    currentScene.remove(controls.getObject());
+    currentScene.remove(camera);
     currentScene = renderView.scene;
-    currentScene.add(controls.getObject());
+    currentScene.add(camera);
   });
+
+  const ONE_METER = 1;
+  if(positionInMeter.distanceTo(camera.position) > ONE_METER){
+    positionInMeter.copy(camera.position);
+    geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
+    const url = '/?center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
+    window.history.replaceState(null, '', url);
+  }
 }
 
 let params = (new URL(document.location)).searchParams;
@@ -286,9 +205,12 @@ if(params.has('center')){
   }
 }
 
-const slippy = new Slippy(settings)
+geoOrigin = Slippy.toGeoPoint(settings.origin);
+slippy = new Slippy(settings)
 renderView = slippy.currentRenderView;
 currentScene = renderView.scene;
 initialize();
+geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
+positionInMeter = camera.position.clone();
 
 animate();

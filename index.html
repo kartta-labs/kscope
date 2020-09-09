@@ -9,27 +9,13 @@
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/three.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/loaders/MTLLoader.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/loaders/OBJLoader.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/controls/OrbitControls.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/effects/AnaglyphEffect.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/effects/StereoEffect.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/utils/SceneUtils.js"></script>
 
     <script type="module" src="geospatial_utils.js"></script>
   </head>
-
-  <body>
-    <div id="container">
-    <div id="blocker">
-      <div id="instructions">
-        <span style="font-size:36px">Click to start!</span>
-        <br/>Move with WASD, Look around with MOUSE.<br/>
-        Press 1 for a bird's-eye view and 2 for anaglyph.<br/>
-        In bird's-eye view, press ! to jump to current mouse position on ground.</br>
-        Press 0 for debug mode.<br/>
-        Press Q to move the time slider backward in time, or E to move forward.
-      </div>
-    </div>
-  </div>
 
   <div id="slidecontainer">
     <input type="range" min="1900" max="1960" value="1950" class="slider" id="year-range-slider">
