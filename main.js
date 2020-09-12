@@ -23,8 +23,7 @@ import {Slippy} from "./slippy.js";
 let camera, container, mapControls, currentScene, renderView, slippy;
 
 // Global variables for rendering.
-let renderer, raycaster;
-
+let renderer, renderPass, raycaster, composers, currentComposer, composerIndex;
 
 // Global variables for the pointer lock controler.
 let moveForwardInTime = false;
@@ -58,6 +57,10 @@ function updateYearSlider() {
 yearRangeSlider.oninput = updateYearSlider;
 
 function initialize() {
+  geoOrigin = Slippy.toGeoPoint(settings.origin);
+  slippy = new Slippy(settings)
+  renderView = slippy.currentRenderView;
+  currentScene = renderView.scene;
   renderer = new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -85,6 +88,51 @@ function initialize() {
   mapControls.maxPolarAngle = Math.PI / 2 - 0.01;
   currentScene.add(camera);
 
+  geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
+  positionInMeter = camera.position.clone();
+
+  const composerNoEffects = new THREE.EffectComposer(renderer);
+  const composerBW = new THREE.EffectComposer(renderer);
+  const composerSepiaFilm = new THREE.EffectComposer(renderer);
+  const composerSepia = new THREE.EffectComposer(renderer);
+
+  renderPass = new THREE.RenderPass(currentScene, camera);
+
+  composerNoEffects.addPass(renderPass);
+  composerBW.addPass(renderPass);
+  composerSepiaFilm.addPass(renderPass);
+  composerSepia.addPass(renderPass);
+
+  const gammaCorrection = new THREE.ShaderPass(THREE.GammaCorrectionShader);
+  composerBW.addPass(gammaCorrection);
+  composerSepiaFilm.addPass(gammaCorrection);
+  composerSepia.addPass(gammaCorrection);
+
+  const effectFilmBW = new THREE.FilmPass( 0.35, 0.5, 2048, true );
+  composerBW.addPass(effectFilmBW);
+
+  const effectSepia = new THREE.ShaderPass(THREE.SepiaShader);
+  effectSepia.uniforms[ "amount" ].value = 0.9;
+  composerSepiaFilm.addPass(effectSepia);
+  composerSepia.addPass(effectSepia);
+
+  const effectFilm = new THREE.FilmPass( 0.35, 0.025, 648, false );
+  composerSepiaFilm.addPass(effectFilm);
+
+  const effectVignette = new THREE.ShaderPass(THREE.VignetteShader);
+  effectVignette.uniforms["offset"].value = 0.95;
+  effectVignette.uniforms["darkness"].value = 1.6;
+  composerBW.addPass(effectVignette);
+  composerSepiaFilm.addPass(effectVignette);
+  composerSepia.addPass(effectVignette);
+
+  composers = [];
+  composers.push(composerNoEffects);
+  composers.push(composerBW);
+  composers.push(composerSepiaFilm);
+  currentComposer = composerSepiaFilm; composerIndex = 2;
+  composers.push(composerSepia);
+
   raycaster = new THREE.Raycaster();
   container = document.createElement('div');
   document.addEventListener('mousemove', (event) => {
@@ -109,6 +157,11 @@ function initialize() {
         break;
       case 101:  // e
         moveForwardInTime = true;
+        break;
+      case 49:  // 1
+        composerIndex += 1;
+        composerIndex %= composers.length;
+        currentComposer = composers[composerIndex];
         break;
     }
   }, false);
@@ -142,8 +195,9 @@ function animate() {
     updateYearSlider();
     moveBackwardInTime = false;
   }
+  renderPass.scene = currentScene;
 
-  renderer.render(currentScene, camera);
+  currentComposer.render();
   mapControls.update();
   // Find intersections.
   raycaster.setFromCamera(mouse, camera);
@@ -205,12 +259,5 @@ if(params.has('center')){
   }
 }
 
-geoOrigin = Slippy.toGeoPoint(settings.origin);
-slippy = new Slippy(settings)
-renderView = slippy.currentRenderView;
-currentScene = renderView.scene;
 initialize();
-geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
-positionInMeter = camera.position.clone();
-
 animate();
