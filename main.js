@@ -45,6 +45,26 @@ const /** !Element */ yearRangeValue =
 const /** !Element */ highlightedObjectName =
     document.getElementById('highlighted-object-name');
 
+let params = (new URL(document.location)).searchParams;
+if(params.has('center')){
+  const [lat, lon] = params.get('center').split(',');
+  if(!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lon))) {
+    const toMicro = 1e6;
+    settings.origin = {
+      'latitudeInMicroDegrees': parseFloat(lat) * toMicro,
+      'longitudeInMicroDegrees': parseFloat(lon) * toMicro,
+      'altitudeInMeters': 0
+    }
+  }
+}
+
+if(params.has('year')){
+  const year = params.get('year');
+  if(!isNaN(parseInt(year))) {
+    settings.year = year;
+  }
+}
+
 yearRangeSlider.value = settings.year;
 yearRangeValue.innerText = yearRangeSlider.value;
 
@@ -53,9 +73,16 @@ function updateYearSlider() {
   yearRangeValue.innerText = yearRangeSlider.value;
   settings.year = yearRangeSlider.value;
   renderView.setSceneYear();
+  updateUrl();
 }
 yearRangeSlider.oninput = updateYearSlider;
 
+function updateUrl() {
+  positionInMeter.copy(camera.position);
+  geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
+  const url = '/?year='+yearRangeSlider.value+'&center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
+  window.history.replaceState(null, '', url);
+}
 function initialize() {
   geoOrigin = Slippy.toGeoPoint(settings.origin);
   slippy = new Slippy(settings)
@@ -239,23 +266,7 @@ function animate() {
 
   const ONE_METER = 1;
   if(positionInMeter.distanceTo(camera.position) > ONE_METER){
-    positionInMeter.copy(camera.position);
-    geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
-    const url = '/?center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
-    window.history.replaceState(null, '', url);
-  }
-}
-
-let params = (new URL(document.location)).searchParams;
-if(params.has('center')){
-  const [lat, lon] = params.get('center').split(',');
-  if(!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lon))) {
-    const toMicro = 1e6;
-    settings.origin = {
-      'latitudeInMicroDegrees': parseFloat(lat) * toMicro,
-      'longitudeInMicroDegrees': parseFloat(lon) * toMicro,
-      'altitudeInMeters': 0
-    }
+    updateUrl();
   }
 }
 
