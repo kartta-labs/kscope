@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Waybak: Collaborative Time Travel (v2)</title>
+    <title>Kartta Labs - 3d</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="icon" type="image/png" href="/assets/favicon-32x32.png" sizes="32x32">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" media="screen" href="/assets/kartta-app.css">
+    <script src="/assets/kartta-app.js"></script>
     <script src="settings.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/three.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/loaders/MTLLoader.js"></script>
@@ -25,11 +28,18 @@
   </head>
   <body>
     <header>
-      <div class="logo-container"></div>
+      <div class="logo-container"><div id="kartta-app-menu" ></div></div>
       <div class="year-container">Year: <span id="year-range-value"></span></div>
       <div class="slider-container"><input type="range" min="1900" max="1960" value="1950" class="slider" id="year-range-slider"></div>
       <div class="debug-container"><span id="highlighted-object-name"></span></div>
     </header>
     <div id="viewport"></div>
+    <div class="kartta-footer-overlay">
+      <div class="kartta-footer-overlay-container">
+        <div class="kartta-footer-background">
+          <div id="kartta-footer-content"></div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
