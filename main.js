@@ -20,7 +20,7 @@
 import {Slippy} from "./slippy.js";
 
 // Global variables to setup the scene.
-let camera, container, mapControls, currentScene, renderView, slippy;
+let camera, mapControls, currentScene, renderView, slippy;
 
 // Global variables for rendering.
 let renderer, renderPass, raycaster, composers, currentComposer, composerIndex;
@@ -161,14 +161,13 @@ function initialize() {
   composers.push(composerSepia);
 
   raycaster = new THREE.Raycaster();
-  container = document.createElement('div');
   document.addEventListener('mousemove', (event) => {
     event.preventDefault();
     // Linearly transform the mouse position on screen to ±1 in x and y
     // directions. Note that the input mouse y-axis from the mousemove event is
     // downward but the output needs to be upward for the raycaster.
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -((event.clientY-container.offsetTop) / window.innerHeight) * 2 + 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   }, false);
 
   document.addEventListener('keypress', (event) => {
