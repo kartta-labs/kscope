@@ -80,7 +80,8 @@ yearRangeSlider.oninput = updateYearSlider;
 function updateUrl() {
   positionInMeter.copy(camera.position);
   geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
-  const url = '/?year='+yearRangeSlider.value+'&center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
+  const url = location.origin + location.pathname +
+            '?year='+yearRangeSlider.value+'&center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
   window.history.replaceState(null, '', url);
 }
 
