@@ -83,14 +83,19 @@ function updateUrl() {
   const url = '/?year='+yearRangeSlider.value+'&center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
   window.history.replaceState(null, '', url);
 }
-function initialize() {
+
+/**
+ * @param {Element} container The DOM element that the 3d canvas will be inserted into
+ */
+function initialize(container) {
   geoOrigin = Slippy.toGeoPoint(settings.origin);
   slippy = new Slippy(settings)
   renderView = slippy.currentRenderView;
   currentScene = renderView.scene;
   renderer = new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  //renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(container.offsetWidth, container.offsetHeight);
   if (settings.shadows) {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -105,7 +110,7 @@ function initialize() {
   camera.position.set(0, eyeHeightInMeters, -10);
   // camera.lookAt(currentScene.position);
 
-  mapControls = new THREE.MapControls(camera, document.body);
+  mapControls = new THREE.MapControls(camera, container);
   mapControls.screenSpacePanning = true;
 
   mapControls.minDistance = 100;
@@ -161,7 +166,7 @@ function initialize() {
   composers.push(composerSepia);
 
   raycaster = new THREE.Raycaster();
-  document.addEventListener('mousemove', (event) => {
+  container.addEventListener('mousemove', (event) => {
     event.preventDefault();
     // Linearly transform the mouse position on screen to ±1 in x and y
     // directions. Note that the input mouse y-axis from the mousemove event is
@@ -192,19 +197,23 @@ function initialize() {
     }
   }, false);
 
-  // TODO: Figure out why container.appendChild doesn't work.
-  // container.appendChild(renderer.domElement);
-  document.body.appendChild( renderer.domElement );
+  container.appendChild( renderer.domElement );
+
+  const onWindowResize = () => {
+    camera.aspect = container.offsetWidth / container.offsetHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+  };
 
   window.addEventListener('resize', onWindowResize, false);
 }
 
-/** Updates the camera if the window is resized. */
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
+// /** Updates the camera if the window is resized. */
+// function onWindowResize() {
+//   camera.aspect = window.innerWidth / window.innerHeight;
+//   camera.updateProjectionMatrix();
+//   renderer.setSize(window.innerWidth, window.innerHeight);
+// }
 
 /** Runs every frame to animate the scene. */
 function animate() {
@@ -269,5 +278,8 @@ function animate() {
   }
 }
 
-initialize();
-animate();
+document.addEventListener("DOMContentLoaded", () => {
+  var viewport = document.getElementById('viewport');
+  initialize(viewport);
+  animate();
+});

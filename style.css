@@ -1,7 +1,43 @@
-#slidecontainer {
-  clear: both;
-  width: 100%; /* Width of the outside container */
-  z-index: 1;
+body {
+    overflow: hidden;
+    display: flex;
+    flex-flow: column;
+    height: 100vh;
+    margin:0;
+    padding:0;
+}
+
+header {
+  margin: 0;
+  padding: 0;
+  line-height:1.6666;
+  border-bottom:1px solid black;
+  height:55px;
+  z-index:1001;
+  font-size:14px;
+  display: flex;
+  flex-flow: row;
+}
+
+.logo-container {
+  width: 150px;
+}
+
+.year-container {
+  padding-top: 15px;
+  width: 75px;
+}
+
+.slider-container {
+  flex: 1;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 15px;
+}
+
+
+#viewport {
+  flex: 1;
 }
 
 /* The slider itself */
@@ -10,7 +46,7 @@
   -webkit-appearance: none;  /* Override default CSS styles */
   appearance: none;
   width: 100%; /* Full-width */
-  height: 25px; /* Specified height */
+  height: 15px; /* Specified height */
   background: #d3d3d3; /* Grey background */
   outline: none; /* Remove outline */
   opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
