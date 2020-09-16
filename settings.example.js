@@ -61,7 +61,7 @@ const nonShadowLights = {
 };
 
 let settings = {
-  'endpoint': 'URL to a host that returns GeoJSON for a given ?bbox=',
+  'endpoint': '${RENDERER_BBOX_DATA_URL}', // URL to a host that returns GeoJSON for a given ?bbox=
   'bbox': '-74.005412,40.7412755,-73.997376,40.743333',
   //'fullUrl': './kartta.json',
   'origin': {
