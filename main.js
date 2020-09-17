@@ -23,7 +23,7 @@ import {Slippy} from "./slippy.js";
 let camera, mapControls, currentScene, renderView, slippy;
 
 // Global variables for rendering.
-let renderer, renderPass, raycaster, composers, currentComposer, composerIndex;
+let renderer, raycaster;
 
 // Global variables for the pointer lock controler.
 let moveForwardInTime = false;
@@ -124,48 +124,6 @@ function initialize(container) {
   geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
   positionInMeter = camera.position.clone();
 
-  const composerNoEffects = new THREE.EffectComposer(renderer);
-  const composerBW = new THREE.EffectComposer(renderer);
-  const composerSepiaFilm = new THREE.EffectComposer(renderer);
-  const composerSepia = new THREE.EffectComposer(renderer);
-
-  renderPass = new THREE.RenderPass(currentScene, camera);
-
-  composerNoEffects.addPass(renderPass);
-  composerBW.addPass(renderPass);
-  composerSepiaFilm.addPass(renderPass);
-  composerSepia.addPass(renderPass);
-
-  const gammaCorrection = new THREE.ShaderPass(THREE.GammaCorrectionShader);
-  composerBW.addPass(gammaCorrection);
-  composerSepiaFilm.addPass(gammaCorrection);
-  composerSepia.addPass(gammaCorrection);
-
-  const effectFilmBW = new THREE.FilmPass( 0.35, 0.5, 2048, true );
-  composerBW.addPass(effectFilmBW);
-
-  const effectSepia = new THREE.ShaderPass(THREE.SepiaShader);
-  effectSepia.uniforms[ "amount" ].value = 0.9;
-  composerSepiaFilm.addPass(effectSepia);
-  composerSepia.addPass(effectSepia);
-
-  const effectFilm = new THREE.FilmPass( 0.35, 0.025, 648, false );
-  composerSepiaFilm.addPass(effectFilm);
-
-  const effectVignette = new THREE.ShaderPass(THREE.VignetteShader);
-  effectVignette.uniforms["offset"].value = 0.95;
-  effectVignette.uniforms["darkness"].value = 1.6;
-  composerBW.addPass(effectVignette);
-  composerSepiaFilm.addPass(effectVignette);
-  composerSepia.addPass(effectVignette);
-
-  composers = [];
-  composers.push(composerNoEffects);
-  composers.push(composerBW);
-  composers.push(composerSepiaFilm);
-  currentComposer = composerSepiaFilm; composerIndex = 2;
-  composers.push(composerSepia);
-
   raycaster = new THREE.Raycaster();
   container.addEventListener('mousemove', (event) => {
     event.preventDefault();
@@ -190,11 +148,6 @@ function initialize(container) {
       case 101:  // e
         moveForwardInTime = true;
         break;
-      case 49:  // 1
-        composerIndex += 1;
-        composerIndex %= composers.length;
-        currentComposer = composers[composerIndex];
-        break;
     }
   }, false);
 
@@ -208,13 +161,6 @@ function initialize(container) {
 
   window.addEventListener('resize', onWindowResize, false);
 }
-
-// /** Updates the camera if the window is resized. */
-// function onWindowResize() {
-//   camera.aspect = window.innerWidth / window.innerHeight;
-//   camera.updateProjectionMatrix();
-//   renderer.setSize(window.innerWidth, window.innerHeight);
-// }
 
 /** Runs every frame to animate the scene. */
 function animate() {
@@ -231,9 +177,8 @@ function animate() {
     updateYearSlider();
     moveBackwardInTime = false;
   }
-  renderPass.scene = currentScene;
 
-  currentComposer.render();
+  renderer.render(currentScene, camera);
   mapControls.update();
   // Find intersections.
   raycaster.setFromCamera(mouse, camera);
