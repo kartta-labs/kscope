@@ -29,8 +29,6 @@ let renderer, raycaster;
 let moveForwardInTime = false;
 let moveBackwardInTime = false;
 
-let geoOrigin, geoPosition, positionInMeter;
-
 const eyeHeightInMeters = 1.7;
 const mouse = { x: 0, y: 0 };
 const groundMouse = { x: 0, y: 0, z: 0};
@@ -46,17 +44,6 @@ const /** !Element */ highlightedObjectName =
     document.getElementById('highlighted-object-name');
 
 let params = (new URL(document.location)).searchParams;
-if(params.has('center')){
-  const [lat, lon] = params.get('center').split(',');
-  if(!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lon))) {
-    const toMicro = 1e6;
-    settings.origin = {
-      'latitudeInMicroDegrees': parseFloat(lat) * toMicro,
-      'longitudeInMicroDegrees': parseFloat(lon) * toMicro,
-      'altitudeInMeters': 0
-    }
-  }
-}
 
 if(params.has('year')){
   const year = params.get('year');
@@ -78,10 +65,7 @@ function updateYearSlider() {
 yearRangeSlider.oninput = updateYearSlider;
 
 function updateUrl() {
-  positionInMeter.copy(camera.position);
-  geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
-  const url = location.origin + location.pathname +
-            '?year='+yearRangeSlider.value+'&center='+geoPosition.getLatitudeInDegrees().toFixed(8)+','+geoPosition.getLongitudeInDegrees().toFixed(8);
+  const url = location.origin + location.pathname + '?year='+yearRangeSlider.value;
   window.history.replaceState(null, '', url);
 }
 
@@ -89,7 +73,6 @@ function updateUrl() {
  * @param {Element} container The DOM element that the 3d canvas will be inserted into
  */
 function initialize(container) {
-  geoOrigin = Slippy.toGeoPoint(settings.origin);
   slippy = new Slippy(settings)
   renderView = slippy.currentRenderView;
   currentScene = renderView.scene;
@@ -120,9 +103,6 @@ function initialize(container) {
 
   mapControls.maxPolarAngle = Math.PI / 2 - 0.01;
   currentScene.add(camera);
-
-  geoPosition = Slippy.metersToGeoPoint(camera.position, {'x':0, 'y':0}, geoOrigin);
-  positionInMeter = camera.position.clone();
 
   raycaster = new THREE.Raycaster();
   container.addEventListener('mousemove', (event) => {
@@ -218,10 +198,6 @@ function animate() {
     currentScene.add(camera);
   });
 
-  const ONE_METER = 1;
-  if(positionInMeter.distanceTo(camera.position) > ONE_METER){
-    updateUrl();
-  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
