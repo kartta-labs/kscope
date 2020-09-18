@@ -1,4 +1,6 @@
 import {Axes} from "./axes.js";
+import {Rect} from "./rect.js";
+import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
 import {GeoPoint, GeoConverter} from "./geospatial_utils.js";
 import {MovingCenterFrame} from "./moving_center_frame.js";
@@ -21,6 +23,9 @@ class App {
     this.sceneOrigin = new GeoPoint(
       Settings.origin.latitudeInMicroDegrees,
       Settings.origin.longitudeInMicroDegrees);
+    this.sceneOriginDegrees = new THREE.Vector2(Settings.origin.longitudeInMicroDegrees / 1.0e6,
+                                                Settings.origin.latitudeInMicroDegrees / 1.0e6);
+    this.coords = new Coords(this.sceneOriginDegrees);
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
     this.renderer.setClearColor( 0x6666ff, 1 );
@@ -42,6 +47,19 @@ class App {
 
 this.frustum = new THREE.Frustum();
 this.cameraViewProjectionMatrix = new THREE.Matrix4();
+this.tiles = Util.tilesAt(this.sceneOriginDegrees, 5);
+this.tiles.forEach(tile => {
+  const a = this.coords.lonLatDegreesToSceneCoords({x: tile[0][0], y: tile[0][1]});
+  const b = this.coords.lonLatDegreesToSceneCoords({x: tile[1][0], y: tile[1][1]});
+  const rect = Rect.rect(a, b, {
+    color: 0xff0000,
+    linewidth: 3,
+    y: 0.3
+  });
+  this.scene.add(rect);
+});
+
+
 
 
     this.eventTracker.setMouseDownListener(e => {
@@ -147,7 +165,7 @@ this.cameraViewProjectionMatrix = new THREE.Matrix4();
     this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
     this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
     const origin = new THREE.Vector3(0,0,0);
-    console.log(this.frustum.containsPoint(origin));
+    //console.log(this.frustum.containsPoint(origin));
   }
 
   initializeLights() {
@@ -188,6 +206,7 @@ this.cameraViewProjectionMatrix = new THREE.Matrix4();
       tipRadius: 1.0,
       tipHeight: 6.0
     });
+    this.axes.position.set(0,0.2,0);
     this.scene.add(this.axes);
   }
 
@@ -219,9 +238,7 @@ this.cameraViewProjectionMatrix = new THREE.Matrix4();
     });
   }
 
-  initializeBuildings() {
-
-      const bbox = '-74.0025,40.740981639193706,-73.9989,40.743709187058556';
+  initializeBuildings(bbox) {
       const url = Settings.endpoint + '?bbox=' + bbox;
       return fetch(url)
           .then(response => {
@@ -244,6 +261,7 @@ this.cameraViewProjectionMatrix = new THREE.Matrix4();
       options = options || {};
       const shape =
         GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
+
       const MINIMUM_EXTRUSION_METERS = 0.01;
 
       const extrudeSettings = {
@@ -375,9 +393,18 @@ this.reportCanSeeOrigin();
 
     // action!
     this.requestRenderAfterEach(
-        //this.initializeBuildings(),
+//        this.initializeBuildings('-74.0025,40.740981639193706,-73.9989,40.743709187058556'),
         this.initializeGround(),
         this.initializeSky());
+
+    this.requestRenderAfterEach(
+      ...this.tiles.map(tile => {
+        return this.initializeBuildings(tile[0][0] + ',' + tile[0][1] + ',' + tile[1][0] + ',' + tile[1][1]);
+      })
+    );
+
+
+
     //this.requestRenderAfter(this.initializeBuildings());
     //this.requestRenderAfter(this.initializeGround());
     //this.requestRenderAfter(this.initializeSky());
