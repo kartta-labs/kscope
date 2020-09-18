@@ -15,7 +15,11 @@ class App {
 
   /**
    */
-  constructor(container) {
+  constructor(container, options) {
+    this.fetchradius = ('fetchradius' in options) ? options['fetchradius'] : 2;
+    this.tilesize = ('tilesize' in options) ? options['tilesize'] : 1000;
+    this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : 1.7;
+    this.speed = ('speed' in options) ? options['speed'] : 1.0;
     this.renderRequested = false;
     this.container = container;
     this.camera = null;
@@ -29,7 +33,6 @@ class App {
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
     this.renderer.setClearColor( 0x6666ff, 1 );
-    //this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight);
     this.container.appendChild( this.renderer.domElement );
     this.eventTracker = new EventTracker(this.container);
 
@@ -47,18 +50,38 @@ class App {
 
 this.frustum = new THREE.Frustum();
 this.cameraViewProjectionMatrix = new THREE.Matrix4();
-this.tiles = Util.tilesAt(this.sceneOriginDegrees, 5);
-this.tiles.forEach(tile => {
-  const a = this.coords.lonLatDegreesToSceneCoords({x: tile[0][0], y: tile[0][1]});
-  const b = this.coords.lonLatDegreesToSceneCoords({x: tile[1][0], y: tile[1][1]});
-  const rect = Rect.rect(a, b, {
-    color: 0xff0000,
-    linewidth: 3,
-    y: 0.3
+// baseTiles are used for 2 purposes:
+//   1. display for debugging, so we can see the tile positioins on the ground (that's why they're added to the scene below)
+//   2. querying to find the tile that the camera is currently in (over).  Since we don't have an implementation of inverse
+//      mercator projection, we just loop over each tile to check whether the current camera position is in it.
+const BASE_TILE_RADIUS = 25;
+this.baseTiles = Util.tilesAt(this.sceneOriginDegrees, 2*BASE_TILE_RADIUS+1, this.tilesize);
+this.baseTiles.forEach(row => {
+  row.forEach(tile => {
+    const a = this.coords.lonLatDegreesToSceneCoords({x: tile[0][0], y: tile[0][1]});
+    const b = this.coords.lonLatDegreesToSceneCoords({x: tile[1][0], y: tile[1][1]});
+    const rect = Rect.rect(a, b, {
+      color: 0xffffff,
+      linewidth: 3,
+      y: 0.5
+    });
+    tile.a = a;
+    tile.b = b;
+    this.scene.add(rect);
+    const redRect = Rect.solidRect(a, b, {
+      color: 0xff0000,
+      y: 0.25
+    });
+    const greyRect = Rect.solidRect(a, b, {
+      color: 0x444444,
+      y: 0.25
+    });
+    tile.redRect = redRect;
+    tile.greyRect = greyRect;
   });
-  this.scene.add(rect);
 });
-
+// keeps track of which tiles data has been requested for
+this.requestedTiles = {};
 
 
 
@@ -126,27 +149,15 @@ this.tiles.forEach(tile => {
 
       this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
       this.camera.matrixWorldNeedsUpdate = true;
+      this.refreshDataForNewCameraPosition();
       this.requestRender();
     }).setMouseWheelListener(e => {
       //console.log('mouseWheel: e = ', e);
     }).setKeyPressListener(e => {
       if (e.key == 'w') {
-        const lookDir = new THREE.Vector3();
-        this.camera.getWorldDirection(lookDir);
-        const lookLen = Math.sqrt(lookDir.x*lookDir.x + lookDir.z*lookDir.z);
-        const speed = 5.0;
-        const step = new THREE.Vector3(speed * lookDir.x / lookLen, 0, speed * lookDir.z / lookLen);
-        const L = new THREE.Matrix4().makeTranslation(step.x, step.y, step.z);
-        const M = this.movingCenterFrame.computeTransform(
-            /* moving= */ this.camera,
-            /* center= */ this.camera,
-            /* frame= */ this.scene,
-            L);
-        this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
-        this.camera.matrixWorldNeedsUpdate = true;
-        this.requestRender();
+        this.walkCamera(this.speedForEyeHeight());
       } else if (e.key == 's') {
-        // NYI
+        this.walkCamera(-this.speedForEyeHeight());
       } else if (e.key == 'a') {
         // NYI
       } else if (e.key == 'd') {
@@ -168,6 +179,114 @@ this.tiles.forEach(tile => {
       }
     });
     this.eventTracker.start();
+
+  }
+
+  speedForEyeHeight() {
+     // linearly interpolate between speed at height 1.7, and 5*speed at height 85.
+     return this.speed * (1.0 + 5.0 * (this.eyeheight - 1.7) / (85.0 - 1.7));
+  }
+
+  walkCamera(amount) {
+    const lookDir = new THREE.Vector3();
+    this.camera.getWorldDirection(lookDir);
+    const lookLen = Math.sqrt(lookDir.x*lookDir.x + lookDir.z*lookDir.z);
+    const step = new THREE.Vector3(amount * lookDir.x / lookLen, 0, amount * lookDir.z / lookLen);
+    const L = new THREE.Matrix4().makeTranslation(step.x, step.y, step.z);
+    const M = this.movingCenterFrame.computeTransform(
+        /* moving= */ this.camera,
+        /* center= */ this.camera,
+        /* frame= */ this.scene,
+        L);
+    this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
+    this.camera.matrixWorldNeedsUpdate = true;
+    this.refreshDataForNewCameraPosition();
+    this.requestRender();
+  }
+
+  tileIndexUnderCamera() {
+    const cameraPos = new THREE.Vector3();
+    this.camera.getWorldPosition(cameraPos);
+    const cameraGroundPos = new THREE.Vector2(cameraPos.x, cameraPos.z);
+    // this is really sloppy and inefficient; TODO: make it cleaner and faster
+    for (let i = 0; i < this.baseTiles.length; ++i) {
+      for (let j = 0; j < this.baseTiles[0].length; ++j) {
+        const xmin = Math.min(this.baseTiles[i][j].a.x, this.baseTiles[i][j].b.x);
+        const xmax = Math.max(this.baseTiles[i][j].a.x, this.baseTiles[i][j].b.x);
+        const ymin = Math.min(this.baseTiles[i][j].a.y, this.baseTiles[i][j].b.y);
+        const ymax = Math.max(this.baseTiles[i][j].a.y, this.baseTiles[i][j].b.y);
+        if (xmin <= cameraGroundPos.x
+            &&
+            ymin <= cameraGroundPos.y
+            &&
+            xmax > cameraGroundPos.x
+            &&
+            ymax > cameraGroundPos.y) {
+          return [i,j];
+        }
+      }
+    }
+    return [-1,-1];
+  }
+
+  /**
+   * Takes a single [i,j] tile index, and returns a list of N^2 tile indices with that one at its center.
+   * Has no concept of whether the indices are valid -- will return negative indices, and arbitrarily large ones.
+   * The caller should weed out any invalid ones.
+   */
+  tileIndicesNear(tileIndex, N) {
+    const d = Math.floor(N/2);
+    const ans = [];
+    for (let i = 0; i < N; ++i) {
+      for (let j = 0; j < N; ++j) {
+        ans.push([tileIndex[0] + i - d, tileIndex[1] + j - d]);
+      }
+    }
+    return ans;
+  }
+
+  bboxQueryStringForTile(tile) {
+    return tile[0][0] + ',' + tile[0][1] + ',' + tile[1][0] + ',' + tile[1][1];
+  }
+
+  refreshDataForNewCameraPosition() {
+    this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
+    this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
+    const origin = new THREE.Vector3(0,0,0);
+    //console.log(this.frustum.containsPoint(origin));
+
+    const tileIndices = this.tileIndicesNear(this.tileIndexUnderCamera(), 2*this.fetchradius+1).filter(tileIndex => {
+      return (
+          tileIndex[0] >= 0
+          &&
+          tileIndex[0] < this.baseTiles.length
+          &&
+          tileIndex[1] >= 0
+          &&
+          tileIndex[1] < this.baseTiles.length
+        );
+    });
+
+    tileIndices.forEach(tileIndex => {
+      const tile = this.baseTiles[tileIndex[0]][tileIndex[1]];
+      const bbox = this.bboxQueryStringForTile(tile);
+      // skip this tile if already requested
+      if (this.requestedTiles[bbox]) { return; }
+      //xxconst tileCenter = new THREE.Vector3((tile[0][0] + tile[1][0])/2, 0, (tile[1][0] + tile[1][0])/2);
+      //xx// skip this tile if center not in view
+      //xxif (!this.frustum.containsPoint(tileCenter)) { return; }
+      this.requestedTiles[bbox] = {
+        tile: tile
+      };
+      this.scene.add(tile.redRect);
+      this.requestRender();
+      //console.log('requesting data for bbox=' + bbox);
+      this.requestRenderAfterEach(this.initializeBuildings(bbox, () => {
+        this.scene.remove(tile.redRect);
+        this.scene.add(tile.greyRect);
+        this.requestRender();
+      }));
+    });
 
   }
 
@@ -202,7 +321,7 @@ this.tiles.forEach(tile => {
 
     // Sets the camera height to human height (2m) looking to the center of the
     // scene from 10m away.
-    this.camera.position.set(0, 50*Settings.eyeHeightInMeters, 200);
+    this.camera.position.set(0,  this.eyeheight /*Settings.eyeHeightInMeters*/, 200);
     this.camera.up.set(0, 1, 0);
     // IMPORTANT: camera.lookAt only works if camera.matrixAutoUpdate is true so it must
     //    be called BEFORE setting camera.matrixAutoUpdate to false below!!!
@@ -251,7 +370,7 @@ this.tiles.forEach(tile => {
     });
   }
 
-  initializeBuildings(bbox) {
+  initializeBuildings(bbox, doneFunc) {
       const url = Settings.endpoint + '?bbox=' + bbox;
       return fetch(url)
           .then(response => {
@@ -259,6 +378,9 @@ this.tiles.forEach(tile => {
           })
           .then(data => {
              this.processFeatures(data);
+          })
+          .then(() => {
+            if (doneFunc) { doneFunc(); }
           })
           .catch(e => console.log(e));
   }
@@ -409,12 +531,13 @@ this.reportCanSeeOrigin();
 //        this.initializeBuildings('-74.0025,40.740981639193706,-73.9989,40.743709187058556'),
         this.initializeGround(),
         this.initializeSky());
+    this.refreshDataForNewCameraPosition();
 
-    this.requestRenderAfterEach(
-      ...this.tiles.map(tile => {
-        return this.initializeBuildings(tile[0][0] + ',' + tile[0][1] + ',' + tile[1][0] + ',' + tile[1][1]);
-      })
-    );
+//    this.requestRenderAfterEach(
+//      ...this.baseTiles.map(tile => {
+//        return this.initializeBuildings(tile[0][0] + ',' + tile[0][1] + ',' + tile[1][0] + ',' + tile[1][1]);
+//      })
+//    );
 
 
 

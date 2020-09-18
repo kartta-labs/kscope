@@ -208,7 +208,48 @@
 
 import {App} from "./app.js";
 
-const app = new App(document.getElementById('viewport'));
+
+let params = (new URL(document.location)).searchParams;
+
+
+const year = params.has("year") ? parseInt(params.get("year")) : 1940;
+const tilesize = params.has("tilesize") ? parseInt(params.get("tilesize")) : 1000;
+const fetchradius = params.has("fetchradius") ? parseInt(params.get("fetchradius")) : 2;
+const eyeheight = params.has("eyeheight") ? parseFloat(params.get("eyeheight")) : 1.7;
+const speed = params.has("speed") ? parseFloat(params.get("speed")) : 1.0;
+
+const url = location.origin + location.pathname
+          + '?year='+year
+          + '&tilesize='+tilesize
+          + '&fetchradius='+fetchradius
+          + '&eyeheight='+eyeheight
+          + '&speed='+speed
+          ;
+window.history.replaceState(null, '', url);
+
+//if (params.has('year')){
+//  const year = params.get('year');
+//  if (!isNaN(parseInt(year))) {
+//    settings.year = year;
+//  }
+//}
+//
+//if (params.has('tilesize')){
+//  const tilesize = params.get('tilesize');
+//  if (!isNaN(parseInt(tilesize))) {
+//    settings.tilesize = tilesize;
+//  }
+//}
+//
+//
+
+const app = new App(document.getElementById('viewport'), {
+  year: year,
+  tilesize: tilesize,
+  fetchradius: fetchradius,
+  eyeheight: eyeheight,
+  speed: speed
+});
 
 
 window.addEventListener('load', () => {
