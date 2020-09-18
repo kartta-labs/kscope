@@ -32,14 +32,51 @@ class App {
     this.center.position.set(0,0,0);
     this.scene.add(this.center);
 
+    //this.raycaster = new THREE.Raycaster();
+
     this.idToFeatureProperties = {};
 
     this.movingCenterFrame = new MovingCenterFrame();
 
     this.eventMode = 'look';
 
+this.frustum = new THREE.Frustum();
+this.cameraViewProjectionMatrix = new THREE.Matrix4();
+
+
     this.eventTracker.setMouseDownListener(e => {
-      //console.log('mouseDown: e = ', e);
+      if (e.button == 2) {
+
+//const cp = new THREE.Vector3();
+//this.camera.getWorldPosition(cp);
+////console.log(cp);
+//this.axes2.position.set(cp.x, 0, cp.z);
+//this.requestRender();
+//
+//this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
+//this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
+//const origin = new THREE.Vector3(0,0,0);
+////console.log(this.axes);
+////console.log(this.frustum.intersectsObject( this.axes ));
+//console.log(this.frustum.containsPoint(origin));
+
+//xx        const screenMouse = new THREE.Vector2(e.x, e.y);
+//xx        this.raycaster.setFromCamera(screenMouse, this.camera);
+//xx        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+//xxconsole.log('got ' + intersects.length + ' intersections');
+//xx        for (let i = 0; i < intersects.length; ++i) {
+//xxconsole.log('  intersected object name: ' + intersects[i].object.name);
+//xx          if (intersects[i].object.name == 'ground') {
+//xx            const groundMouse = new THREE.Vector3(
+//xx                intersects[i].point.x,
+//xx                intersects[i].point.y,
+//xx                intersects[i].point.z);
+//xx            console.log(groundMouse);
+//xx            break;
+//xx          }
+//xx        }
+
+      }
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
     }).setMouseDragListener((p, dp, button) => {
@@ -103,6 +140,16 @@ class App {
 
   }
 
+  reportCanSeeOrigin() {
+// Experiment for checking whether a location is in the viewing frustum.  This experiment checks (0,0,0) but same
+// technique will work for any coords.  Can use this to decide which map tiles are visible (approximate by just
+// checking visibility of tile centers?).
+    this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
+    this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
+    const origin = new THREE.Vector3(0,0,0);
+    console.log(this.frustum.containsPoint(origin));
+  }
+
   initializeLights() {
     // Add ambient lights.
     Settings.lights.Ambient.forEach((item) => {
@@ -136,12 +183,12 @@ class App {
 
     this.scene.add(this.camera);
 
-    const axes = Axes.axes3D({
+    this.axes = Axes.axes3D({
       length: 50,
       tipRadius: 1.0,
       tipHeight: 6.0
     });
-    this.scene.add(axes);
+    this.scene.add(this.axes);
   }
 
   initializeGround() {
@@ -305,6 +352,7 @@ class App {
     requestAnimationFrame(() => {
       this.renderRequested = false;
       this.renderer.render( this.scene, this.camera );
+this.reportCanSeeOrigin();
     });
   }
 
@@ -327,7 +375,7 @@ class App {
 
     // action!
     this.requestRenderAfterEach(
-        this.initializeBuildings(),
+        //this.initializeBuildings(),
         this.initializeGround(),
         this.initializeSky());
     //this.requestRenderAfter(this.initializeBuildings());
