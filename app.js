@@ -131,7 +131,20 @@ this.tiles.forEach(tile => {
       //console.log('mouseWheel: e = ', e);
     }).setKeyPressListener(e => {
       if (e.key == 'w') {
-        // NYI
+        const lookDir = new THREE.Vector3();
+        this.camera.getWorldDirection(lookDir);
+        const lookLen = Math.sqrt(lookDir.x*lookDir.x + lookDir.z*lookDir.z);
+        const speed = 5.0;
+        const step = new THREE.Vector3(speed * lookDir.x / lookLen, 0, speed * lookDir.z / lookLen);
+        const L = new THREE.Matrix4().makeTranslation(step.x, step.y, step.z);
+        const M = this.movingCenterFrame.computeTransform(
+            /* moving= */ this.camera,
+            /* center= */ this.camera,
+            /* frame= */ this.scene,
+            L);
+        this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
+        this.camera.matrixWorldNeedsUpdate = true;
+        this.requestRender();
       } else if (e.key == 's') {
         // NYI
       } else if (e.key == 'a') {
@@ -324,7 +337,7 @@ this.tiles.forEach(tile => {
   processFeatures(response) {
     const features = response.data;
 
-    console.log('got ' + features.length + ' features');
+    //console.log('got ' + features.length + ' features');
     for (let i = 0; i < features.length; i++) {
       this.idToFeatureProperties[features[i].id] = features[i].properties;
       let numberOfLevels = 0;
