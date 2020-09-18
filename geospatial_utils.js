@@ -171,15 +171,14 @@ class GeoConverter {
    * @return {!Array<!GeoPoint>}
    */
   static geoPointArrayToSceneCoordinatesArray(geoPointArray, sceneOrigin) {
-      return geoPointArray.map((point) => {
-      const x = (point.getMercatorXfromLongitude() -
-                  sceneOrigin.getMercatorXfromLongitude()) /
-          point.getOneMeterInMercatorUnit();
-      const z = -(point.getMercatorYfromLatitude() -
-                  sceneOrigin.getMercatorYfromLatitude()) /
-          point.getOneMeterInMercatorUnit();
-      return new THREE.Vector2(x, z);
-      });
+      return geoPointArray.map((point) => GeoConverter.geoPointToSceneCoord(point, sceneOrigin));
+  }
+
+  static geoPointToSceneCoord(geoPoint, sceneOrigin) {
+    return new THREE.Vector2(
+       (geoPoint.getMercatorXfromLongitude() - sceneOrigin.getMercatorXfromLongitude()) / geoPoint.getOneMeterInMercatorUnit(),
+      -(geoPoint.getMercatorYfromLatitude()  - sceneOrigin.getMercatorYfromLatitude() ) / geoPoint.getOneMeterInMercatorUnit()
+    );
   }
 
   /**
