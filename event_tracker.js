@@ -109,7 +109,8 @@ class EventTracker {
 
   relCoords(event) {
     return { x : event.pageX - this.dom_element.offsetLeft,
-             y : event.pageY - this.dom_element.offsetTop };
+             y : event.pageY - this.dom_element.offsetTop,
+             button: event.button };
   }
 
   start() {
@@ -117,6 +118,11 @@ class EventTracker {
     window.addEventListener( 'keyup',      this.keyUp,     false );
     this.dom_element.addEventListener( 'mousedown',  this.mouseDown,  false );
 	this.dom_element.addEventListener( 'mousewheel', this.mouseWheel, false );
+	this.dom_element.addEventListener( 'contextmenu', (e) => {
+      e.preventDefault();
+      return false;
+    });
+
   }
 
 };
