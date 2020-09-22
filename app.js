@@ -347,6 +347,10 @@ this.requestedTiles = {};
     this.camera.matrixAutoUpdate = false;
     this.camera.matrixWorldNeedsUpdate = true;
     this.refreshDataForNewCameraPosition();
+if (this.skybox) {
+this.skybox.position.x = this.cameraX;
+this.skybox.position.z = this.cameraZ;
+}
     this.requestRender();
   }
 
@@ -415,6 +419,7 @@ this.requestedTiles = {};
   initializeSky() {
     const sb = new SkyBox();
     return sb.getObject().then(skyboxObject => {
+      this.skybox = skyboxObject;
       this.scene.add(skyboxObject);
     });
   }
