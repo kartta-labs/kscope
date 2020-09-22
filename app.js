@@ -135,7 +135,7 @@ this.requestedTiles = {};
             /* center= */ this.center,
             /* frame= */ this.camera,
             L);
-      } else if (this.eventMode == 'look') {
+      } else if (this.eventMode == 'freelook') {
         const v = new THREE.Vector3(dp.y, dp.x, 0).normalize();
         const d = Math.sqrt(dp.x*dp.x + dp.y*dp.y);
         const angle = (d / this.container.offsetWidth) * Math.PI;
@@ -145,6 +145,15 @@ this.requestedTiles = {};
             /* center= */ this.camera,
             /* frame= */ this.camera,
             L);
+      } else if (this.eventMode == 'look') {
+
+        const xangle = (dp.y / this.container.offsetWidth) * Math.PI;
+        const yangle = (dp.x / this.container.offsetWidth) * Math.PI;
+
+        this.cameraXAngle += xangle;
+        this.cameraYAngle += yangle;
+        this.updateCamera();
+        return;
       }
 
       this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
@@ -159,9 +168,9 @@ this.requestedTiles = {};
       } else if (e.key == 's') {
         this.walkCamera(-this.speedForEyeHeight());
       } else if (e.key == 'a') {
-        // NYI
+        this.walkCamera(this.speedForEyeHeight(), /* sideways= */true);
       } else if (e.key == 'd') {
-        // NYI
+        this.walkCamera(-this.speedForEyeHeight(), /* sideways= */true);
       }
     }).setKeyUpListener(e => {
       if (e.key == 'l') {
@@ -187,21 +196,18 @@ this.requestedTiles = {};
      return this.speed * (1.0 + 5.0 * (this.eyeheight - 1.7) / (85.0 - 1.7));
   }
 
-  walkCamera(amount) {
+  walkCamera(amount, sideways) {
     const lookDir = new THREE.Vector3();
     this.camera.getWorldDirection(lookDir);
     const lookLen = Math.sqrt(lookDir.x*lookDir.x + lookDir.z*lookDir.z);
-    const step = new THREE.Vector3(amount * lookDir.x / lookLen, 0, amount * lookDir.z / lookLen);
-    const L = new THREE.Matrix4().makeTranslation(step.x, step.y, step.z);
-    const M = this.movingCenterFrame.computeTransform(
-        /* moving= */ this.camera,
-        /* center= */ this.camera,
-        /* frame= */ this.scene,
-        L);
-    this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
-    this.camera.matrixWorldNeedsUpdate = true;
-    this.refreshDataForNewCameraPosition();
-    this.requestRender();
+    if (sideways) {
+      this.cameraX += amount * lookDir.z;
+      this.cameraZ += -amount * lookDir.x;
+    } else {
+      this.cameraX += amount * lookDir.x;
+      this.cameraZ += amount * lookDir.z;
+    }
+    this.updateCamera();
   }
 
   tileIndexUnderCamera() {
@@ -281,11 +287,13 @@ this.requestedTiles = {};
       this.scene.add(tile.redRect);
       this.requestRender();
       //console.log('requesting data for bbox=' + bbox);
+
       this.requestRenderAfterEach(this.initializeBuildings(bbox, () => {
         this.scene.remove(tile.redRect);
         this.scene.add(tile.greyRect);
         this.requestRender();
       }));
+
     });
 
   }
@@ -313,6 +321,35 @@ this.requestedTiles = {};
     });
   }
 
+  /**
+   * Sets the camera position (& rotation) from this.camera{X,Y,Z} and this.camera{X,Y}Angle,
+   * and requests a render.
+   */
+  updateCamera() {
+
+    this.camera.matrix.identity();
+    this.camera.matrix.multiply(this.movingCenterFrame.computeTransform(
+        /* moving= */ this.camera,
+        /* center= */ this.camera,
+        /* frame= */ this.camera,
+        new THREE.Matrix4().makeRotationY(this.cameraYAngle)));
+    this.camera.matrix.multiply(this.movingCenterFrame.computeTransform(
+        /* moving= */ this.camera,
+        /* center= */ this.camera,
+        /* frame= */ this.camera,
+        new THREE.Matrix4().makeRotationX(this.cameraXAngle)));
+    this.camera.matrix.multiply(this.movingCenterFrame.computeTransform(
+        /* moving= */ this.camera,
+        /* center= */ this.camera,
+        /* frame= */ this.scene,
+        new THREE.Matrix4().makeTranslation(this.cameraX, this.cameraY, this.cameraZ)));
+
+    this.camera.matrixAutoUpdate = false;
+    this.camera.matrixWorldNeedsUpdate = true;
+    this.refreshDataForNewCameraPosition();
+    this.requestRender();
+  }
+
   initializeCamera(initial_gaze_point) {
     this.camera = new THREE.PerspectiveCamera(
         Settings.fieldOfView,
@@ -321,15 +358,27 @@ this.requestedTiles = {};
 
     // Sets the camera height to human height (2m) looking to the center of the
     // scene from 10m away.
-    this.camera.position.set(0,  this.eyeheight /*Settings.eyeHeightInMeters*/, 200);
-    this.camera.up.set(0, 1, 0);
+
+
+    this.cameraXAngle = 0;
+    this.cameraYAngle = 0;
+    this.cameraX = 0;
+    this.cameraY = this.eyeheight;
+    this.cameraZ = 200;
+    this.updateCamera();
+
+//    this.camera.position.set(0,  this.eyeheight /*Settings.eyeHeightInMeters*/, 200);
+//    this.camera.position.set(0,  50, 200);
+
+//    this.camera.up.set(0, 1, 0);
+//    this.camera.rotateY(0.1);
     // IMPORTANT: camera.lookAt only works if camera.matrixAutoUpdate is true so it must
     //    be called BEFORE setting camera.matrixAutoUpdate to false below!!!
-    this.camera.lookAt(0, 0, 0);
+//    this.camera.lookAt(0, 0, 0);
 
-    this.camera.matrixAutoUpdate = false;
-    this.camera.updateMatrix();
-    this.camera.matrixWorldNeedsUpdate = true;
+//    this.camera.matrixAutoUpdate = false;
+//    this.camera.updateMatrix();
+//    this.camera.matrixWorldNeedsUpdate = true;
 
     this.scene.add(this.camera);
 
