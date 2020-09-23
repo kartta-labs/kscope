@@ -7,6 +7,7 @@ import {MovingCenterFrame} from "./moving_center_frame.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
 import {Util} from "./util.js";
+import {Tile, Tiler} from "./tiles.js";
 
 class App {
   BRIGHTNESS_OF_EXTRUDED_MODELS = 0.6;
@@ -30,6 +31,7 @@ class App {
     this.sceneOriginDegrees = new THREE.Vector2(Settings.origin.longitudeInMicroDegrees / 1.0e6,
                                                 Settings.origin.latitudeInMicroDegrees / 1.0e6);
     this.coords = new Coords(this.sceneOriginDegrees);
+    this.tiler = new Tiler(this.tilesize, this.coords);
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
     this.renderer.setClearColor( 0x6666ff, 1 );
@@ -159,7 +161,7 @@ this.requestedTiles = {};
     this.camera.getWorldPosition(cameraPos);
     const cameraGroundPosScene = new THREE.Vector2(cameraPos.x, cameraPos.z);
     const cameraGroundPosLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(cameraGroundPosScene);
-    return Util.tileIndexAtLonLatDegrees(cameraGroundPosLonLatDegrees, this.tilesize);
+    return this.tiler.tileIndexAtLonLatDegrees(cameraGroundPosLonLatDegrees);
   }
 
   /**
@@ -185,19 +187,17 @@ this.requestedTiles = {};
     //console.log(this.frustum.containsPoint(origin));
 
     const cameraTileIndex = this.tileIndexUnderCamera();
-    const tiles = Util.tileIndicesNear(cameraTileIndex, this.fetchradius)
-      .map(tile => Util.tileAtIndex(tile,this.tilesize));
+    const tiles = Tiler.tileIndicesNear(cameraTileIndex, this.fetchradius)
+      .map(tile => this.tiler.tileAtIndex(tile));
     tiles.forEach(tile => {
-      if (this.requestedTiles[tile.bboxString]) { return; }
-      tile.sceneMin = this.coords.lonLatDegreesToSceneCoords(tile.lonLatMin);
-      tile.sceneMax = this.coords.lonLatDegreesToSceneCoords(tile.lonLatMax);
+      if (this.requestedTiles[tile.getBBoxString()]) { return; }
 
       const requestedTile = {
         tile: tile
       };
-      this.requestedTiles[tile.bboxString] = requestedTile;
+      this.requestedTiles[tile.getBBoxString()] = requestedTile;
 
-      requestedTile.redRect = Rect.solidRect(tile.sceneMin, tile.sceneMax, {
+      requestedTile.redRect = Rect.solidRect(tile.getSceneMin(), tile.getSceneMax(), {
         color: 0xff0000,
         outlinecolor: 0x000000,
         y: 0.25
@@ -205,9 +205,9 @@ this.requestedTiles = {};
       this.scene.add(requestedTile.redRect);
       this.requestRender();
 
-      this.requestRenderAfterEach(this.initializeBuildings(tile.bboxString, () => {
+      this.requestRenderAfterEach(this.initializeBuildings(tile.getBBoxString(), () => {
         this.scene.remove(requestedTile.redRect);
-        requestedTile.greenRect = Rect.rect(tile.sceneMin, tile.sceneMax, {
+        requestedTile.greenRect = Rect.rect(tile.getSceneMin(), tile.getSceneMax(), {
           color: 0x00ff00,
           linewidth: 3,
           y: 0.5
