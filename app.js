@@ -268,10 +268,14 @@ this.requestedTiles = {};
     this.camera.matrixAutoUpdate = false;
     this.camera.matrixWorldNeedsUpdate = true;
     this.refreshDataForNewCameraPosition();
-if (this.skybox) {
-this.skybox.position.x = this.cameraX;
-this.skybox.position.z = this.cameraZ;
-}
+    if (this.skybox) {
+      this.skybox.position.x = this.cameraX;
+      this.skybox.position.z = this.cameraZ;
+    }
+    if (this.ground) {
+      this.ground.position.x = this.cameraX;
+      this.ground.position.z = this.cameraZ;
+    }
     this.requestRender();
   }
 
@@ -333,6 +337,7 @@ this.skybox.position.z = this.cameraZ;
             if (Settings.shadows) {
               plane.receiveShadow = true;
             }
+            this.ground = plane;
             this.scene.add(plane);
           });
   }
