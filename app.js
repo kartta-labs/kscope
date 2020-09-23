@@ -22,6 +22,7 @@ class App {
     this.tilesize = ('tilesize' in options) ? options['tilesize'] : 1000;
     this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : 1.7;
     this.speed = ('speed' in options) ? options['speed'] : 1.0;
+    this.debug = ('debug' in options) ? options['debug'] : false;
     this.renderRequested = false;
     this.container = container;
     this.camera = null;
@@ -197,15 +198,18 @@ class App {
       this.bBoxStringToSceneTileDetails[tile.getBBoxString()] = tileDetails;
       this.scene.add(tileObject);
 
-      tileDetails.redRect = Rect.solidRect(tile.getSceneMin(), tile.getSceneMax(), {
-        color: 0xff0000,
-        outlinecolor: 0x000000,
-        y: 0.25
-      });
-      this.scene.add(tileDetails.redRect);
-      this.requestRender();
+      if (this.debug) {
+        tileDetails.redRect = Rect.solidRect(tile.getSceneMin(), tile.getSceneMax(), {
+          color: 0xff0000,
+          outlinecolor: 0x000000,
+          y: 0.25
+        });
+        this.scene.add(tileDetails.redRect);
+        this.requestRender();
+      }
 
       this.requestRenderAfterEach(this.initializeBuildings(tile, tileObject, () => {
+        if (!this.debug) { return; }
         this.scene.remove(tileDetails.redRect);
         tileDetails.greenRect = Rect.rect(tile.getSceneMin(), tile.getSceneMax(), {
           color: 0x00ff00,
@@ -222,8 +226,10 @@ class App {
       const tileIndex = tileDetails.tile.getTileIndex();
       if (Tiler.tileIndexDistance(tileIndex, cameraTileIndex) >= this.dropradius) {
         this.scene.remove(tileDetails.object3D);
-        if (tileDetails.redRect) { this.scene.remove(tileDetails.redRect); }
-        if (tileDetails.greenRect) { this.scene.remove(tileDetails.greenRect); }
+        if (this.debug) {
+          if (tileDetails.redRect) { this.scene.remove(tileDetails.redRect); }
+          if (tileDetails.greenRect) { this.scene.remove(tileDetails.greenRect); }
+        }
         delete(this.bBoxStringToSceneTileDetails[bBoxString]);
       }
     });

@@ -218,6 +218,7 @@ const fetchradius = params.has("fetchradius") ? parseInt(params.get("fetchradius
 const dropradius = params.has("dropradius") ? parseInt(params.get("dropradius")) : 5;
 const eyeheight = params.has("eyeheight") ? parseFloat(params.get("eyeheight")) : 1.7;
 const speed = params.has("speed") ? parseFloat(params.get("speed")) : 1.0;
+const debug = params.has("debug") ? params.get("debug") : "no";
 
 const url = location.origin + location.pathname
           + '?year='+year
@@ -226,6 +227,7 @@ const url = location.origin + location.pathname
           + '&dropradius='+dropradius
           + '&eyeheight='+eyeheight
           + '&speed='+speed
+          + '&debug='+debug
           ;
 window.history.replaceState(null, '', url);
 
@@ -245,13 +247,19 @@ window.history.replaceState(null, '', url);
 //
 //
 
+function stringToBoolean(s) {
+  s = s.toLowerCase();
+  return s == "yes" || s == "true" || s == 1;
+}
+
 const app = new App(document.getElementById('viewport'), {
   year: year,
   tilesize: tilesize,
   fetchradius: fetchradius,
   dropradius: dropradius,
   eyeheight: eyeheight,
-  speed: speed
+  speed: speed,
+  debug: stringToBoolean(debug)
 });
 
 
