@@ -23,6 +23,9 @@ class App {
     this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : 1.7;
     this.speed = ('speed' in options) ? options['speed'] : 1.0;
     this.debug = ('debug' in options) ? options['debug'] : false;
+
+
+
     this.renderRequested = false;
     this.container = container;
     this.camera = null;
@@ -33,6 +36,23 @@ class App {
     this.sceneOriginDegrees = new THREE.Vector2(Settings.origin.longitudeInMicroDegrees / 1.0e6,
                                                 Settings.origin.latitudeInMicroDegrees / 1.0e6);
     this.coords = new Coords(this.sceneOriginDegrees);
+
+
+    const defaultCameraSceneCoords = new THREE.Vector2(0, 200);
+    const defaultCameraLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(defaultCameraSceneCoords);
+
+    this.initialCameraXAngle = ('pitch' in options) ? options['pitch'] : 0;
+    this.initialCameraYAngle = ('yaw' in options) ? options['yaw'] : 0;
+
+    const initialCameraLonDegrees = ('lon' in options) ? options['lon'] : defaultCameraLonLatDegrees.x;
+    const initialCameraLatDegrees = ('lat' in options) ? options['lat'] : defaultCameraLonLatDegrees.y;
+    const initialCameraLonLatDegrees = new THREE.Vector2(initialCameraLonDegrees, initialCameraLatDegrees);
+    const initialCameraSceneCoords = this.coords.lonLatDegreesToSceneCoords(initialCameraLonLatDegrees);
+
+    this.initialCameraX = initialCameraSceneCoords.x;
+    this.initialCameraY = this.eyeheight;
+    this.initialCameraZ = initialCameraSceneCoords.y;
+
     this.tiler = new Tiler(this.tilesize, this.coords);
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
@@ -48,9 +68,9 @@ class App {
     // }
     this.bBoxStringToSceneTileDetails = {};
 
-    //notyet // map whose keys are feature ids, values are the bbox string (key into bBoxStringToSceneTileDetails) for
-    //notyet // the tile containing that feature
-    //notyet this.featureIdToBBoxString = {};
+    // map whose keys are feature ids, values are the bbox string (key into bBoxStringToSceneTileDetails) for
+    // the tile containing that feature
+    this.featureIdToBBoxString = {};
 
     this.center = new THREE.Object3D();
     this.center.position.set(0,0,0);
@@ -208,7 +228,7 @@ class App {
         this.requestRender();
       }
 
-      this.requestRenderAfterEach(this.initializeBuildings(tile, tileObject, () => {
+      this.requestRenderAfterEach(this.initializeBuildings(tile, tileDetails, () => {
         if (!this.debug) { return; }
         this.scene.remove(tileDetails.redRect);
         tileDetails.greenRect = Rect.rect(tile.getSceneMin(), tile.getSceneMax(), {
@@ -271,6 +291,19 @@ class App {
         /* frame= */ this.scene,
         new THREE.Matrix4().makeTranslation(this.cameraX, this.cameraY, this.cameraZ)));
 
+
+    const url = new URL(document.location);
+    const params = url.searchParams;
+    const cameraSceneCoords = new THREE.Vector2(this.cameraX, this.cameraZ);
+    const cameraLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(cameraSceneCoords);
+    params.set("lon", cameraLonLatDegrees.x);
+    params.set("lat", cameraLonLatDegrees.y);
+    params.set("pitch", this.cameraXAngle);
+    params.set("yaw", this.cameraYAngle);
+
+    window.history.replaceState(null, '',
+                                location.origin + location.pathname + '?' + params.toString());
+
     this.camera.matrixAutoUpdate = false;
     this.camera.matrixWorldNeedsUpdate = true;
     this.refreshDataForNewCameraPosition();
@@ -294,13 +327,13 @@ class App {
     // Sets the camera height to human height (2m) looking to the center of the
     // scene from 10m away.
 
-
-    this.cameraXAngle = 0;
-    this.cameraYAngle = 0;
-    this.cameraX = 0;
-    this.cameraY = this.eyeheight;
-    this.cameraZ = 200;
+    this.cameraXAngle = this.initialCameraXAngle;
+    this.cameraYAngle = this.initialCameraYAngle;
+    this.cameraX = this.initialCameraX;
+    this.cameraY = this.initialCameraY;
+    this.cameraZ = this.initialCameraZ;
     this.updateCamera();
+
 
 //    this.camera.position.set(0,  this.eyeheight /*Settings.eyeHeightInMeters*/, 200);
 //    this.camera.position.set(0,  50, 200);
@@ -356,14 +389,14 @@ class App {
     });
   }
 
-  initializeBuildings(tile, root, doneFunc) {
+  initializeBuildings(tile, tileDetails, doneFunc) {
       const url = Settings.endpoint + '?bbox=' + tile.getBBoxString();
       return fetch(url)
           .then(response => {
              return response.json();
           })
           .then(data => {
-             this.processFeatures(data, root);
+             this.processFeatures(data, tileDetails);
           })
           .then(() => {
             if (doneFunc) { doneFunc(); }
@@ -373,11 +406,24 @@ class App {
 
 
   /**
-   * Puts a feature (building) on the scene.
-   * @param {string} feature A polygon geographic feature of a footprint.
+   * Returns a THREE.Mesh (subclass of THREE.Object3D) instance which represents an extrusion
+   * of a polygonal geographic feature.
+   * @param {Object} feature A polygon geographic feature of a footprint.
    * @param {number} numberOfLevels
+   * @param {Object} options
+   * @returns {Object} a new THREE.Mesh instance, or null if any errors are encountered
+   *
+   * The depth of the extrusion can be determined, confusingly, in several ways:
+   *   1. if options['extrudeDepth'] is present, extrude depth is set to it;
+   *      note that options['extrudeDepth'] should be < 0.
+   *   2. otherwise, if the feature has a property named 'height', extrude depth
+   *      is set to -feature.properties['height'] (note this property value can
+   *      be a string and will be parsed into a floating point number)
+   *   3. otherwise, if numberOfLevels > 0, extrude depth is set to
+   *      -numberOfLevels * AVERAGE_STOREY_HEIGHT_METERS,
+   *   4. otherwise, extrude depth is set to -MINIMUM_EXTRUSION_METERS
    */
-  loadFeature(feature, numberOfLevels, tileObject, options) {
+  extrudeFeature(feature, numberOfLevels, options) {
     try{
       options = options || {};
       const shape =
@@ -402,21 +448,58 @@ class App {
       // TODO: set visibility based on current year and the values of
       //   feature.properties.start_date and feature.properties.end_date
       mesh.visible = true;
-      tileObject.add(mesh);
-      //this.scene.add(mesh);
-      //xx if (!this.idToMesh[feature.properties.id]) {
-      //xx   mesh.name = feature.properties.id;
-      //xx   this.idToMesh[mesh.name] = mesh;
-      //xx   RenderView.setVisibility(
-      //xx     RenderView.extractYearFromDate(feature.properties.start_date),
-      //xx     RenderView.extractYearFromDate(feature.properties.end_date), mesh
-      //xx   );
-      //xx   this.scene.add(mesh);
-      //xx }
+      return mesh;
     } catch (e) {
       console.log('Error while loading feature '+ feature.id + ': ' +e);
     }
+    return null;
   }
+
+//  /**
+//   * Puts a feature (building) on the scene.
+//   * @param {string} feature A polygon geographic feature of a footprint.
+//   * @param {number} numberOfLevels
+//   */
+//  loadFeature(feature, numberOfLevels, tileObject, options) {
+//    try{
+//      options = options || {};
+//      const shape =
+//        GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
+//
+//      const MINIMUM_EXTRUSION_METERS = 0.01;
+//
+//      const extrudeSettings = {
+//        depth: numberOfLevels > 0 ? -numberOfLevels * this.AVERAGE_STOREY_HEIGHT_METERS :
+//                                    -MINIMUM_EXTRUSION_METERS,
+//        bevelEnabled: false
+//      };
+//      if (feature.properties['height']) {
+//        extrudeSettings.depth = -parseFloat(feature.properties['height']);
+//      }
+//      if (options.extrudeDepth) {
+//        extrudeSettings.depth = options.extrudeDepth;
+//      }
+//      const mesh = this.shapeToMesh(shape, extrudeSettings, options);
+//      // NOTE: id of this feature  is feature.properties.id; use that later to track this object
+//      mesh.name = feature.properties.id;
+//      // TODO: set visibility based on current year and the values of
+//      //   feature.properties.start_date and feature.properties.end_date
+//      mesh.visible = true;
+//      tileObject.add(mesh);
+//      //this.scene.add(mesh);
+//      //xx if (!this.idToMesh[feature.properties.id]) {
+//      //xx   mesh.name = feature.properties.id;
+//      //xx   this.idToMesh[mesh.name] = mesh;
+//      //xx   RenderView.setVisibility(
+//      //xx     RenderView.extractYearFromDate(feature.properties.start_date),
+//      //xx     RenderView.extractYearFromDate(feature.properties.end_date), mesh
+//      //xx   );
+//      //xx   this.scene.add(mesh);
+//      //xx }
+//    } catch (e) {
+//      console.log('Error while loading feature '+ feature.id + ': ' +e);
+//    }
+//  }
 
   /**
    * Extrudes a shape to create a Mesh.
@@ -443,23 +526,32 @@ class App {
     return mesh;
   }
 
-  processFeatures(response, root) {
+  processFeatures(response, tileDetails) {
     const features = response.data;
 
     //console.log('got ' + features.length + ' features');
     for (let i = 0; i < features.length; i++) {
+
+if (false) {
+      if (features[i].properties.id in this.featureIdToBBoxString) {
+        // object has already been loaded from another tile
+        return;
+      }
+}
+
       let numberOfLevels = 0;
       if (features[i].properties['building:levels']) {
         numberOfLevels = features[i].properties['building:levels'];
       }
 
+      let extrusion = null;
       if(features[i].properties['building']){
-        this.loadFeature(features[i], numberOfLevels, root, {
+        extrusion = this.extrudeFeature(features[i], numberOfLevels, {
           //map: numberOfLevels > 0 ? checkedTexture : undefined
           map: undefined
         });
       } else if (features[i].properties['building:part']) {
-        this.loadFeature(features[i], numberOfLevels, root, {
+        extrusion = this.extrudeFeature(features[i], numberOfLevels, {
           //map: numberOfLevels > 0 ? checkedTexture : undefined
           map: undefined
         });
@@ -468,13 +560,17 @@ class App {
         // sidewalks, that we use for buildings. This works by assuming sidewalks
         // as flat (i.e., with zero stories) buildings. Ideally we should have a
         // separate function to construct each map feature in 3D.
-        this.loadFeature(features[i], numberOfLevels, root, {
+        extrusion = this.extrudeFeature(features[i], numberOfLevels, {
           color: new THREE.Color(0.8, 0.8, 0.8),
           extrudeDepth: -0.15,  // ~ 6 inches, in meters
           receiveShadows: true,
         });
       } else {
         console.log('feature is not supported for rendering.');
+      }
+      if (extrusion != null) {
+        this.featureIdToBBoxString[features[i].properties.id] = tileDetails.tile.getBBoxString();
+        tileDetails.object3D.add(extrusion);
       }
     }
   }

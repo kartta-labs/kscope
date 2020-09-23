@@ -231,28 +231,13 @@ const url = location.origin + location.pathname
           ;
 window.history.replaceState(null, '', url);
 
-//if (params.has('year')){
-//  const year = params.get('year');
-//  if (!isNaN(parseInt(year))) {
-//    settings.year = year;
-//  }
-//}
-//
-//if (params.has('tilesize')){
-//  const tilesize = params.get('tilesize');
-//  if (!isNaN(parseInt(tilesize))) {
-//    settings.tilesize = tilesize;
-//  }
-//}
-//
-//
-
 function stringToBoolean(s) {
   s = s.toLowerCase();
   return s == "yes" || s == "true" || s == 1;
 }
 
-const app = new App(document.getElementById('viewport'), {
+
+const options = {
   year: year,
   tilesize: tilesize,
   fetchradius: fetchradius,
@@ -260,8 +245,14 @@ const app = new App(document.getElementById('viewport'), {
   eyeheight: eyeheight,
   speed: speed,
   debug: stringToBoolean(debug)
-});
+};
 
+if (params.has("lon")) { options['lon'] = parseFloat(params.get("lon")); }
+if (params.has("lat")) { options['lat'] = parseFloat(params.get("lat")); }
+if (params.has("pitch")) { options['pitch'] = parseFloat(params.get("pitch")); }
+if (params.has("yaw")) { options['yaw'] = parseFloat(params.get("yaw")); }
+
+const app = new App(document.getElementById('viewport'), options);
 
 window.addEventListener('load', () => {
   app.initialize();
