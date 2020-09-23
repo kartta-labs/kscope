@@ -2,12 +2,12 @@ const Rect = {};
 
 Rect.rect = (xzMin, xzMax, options) => {
     const lineMat = new THREE.LineBasicMaterial({
-        color: options.color || 0xffffff,
+        color: ('color' in options) ? options.color : 0xffffff,
         linewidth: options.linewidth || 3
     });
     const container = new THREE.Object3D();
     const geom = new THREE.Geometry();
-    const y = options.y || y;
+    const y = options.y || 0;
 
     geom.vertices.push(new THREE.Vector3(xzMin.x, y, xzMin.y));
     geom.vertices.push(new THREE.Vector3(xzMax.x, y, xzMin.y));
@@ -26,10 +26,12 @@ Rect.rect = (xzMin, xzMax, options) => {
 };
 
 Rect.solidRect = (xzMin, xzMax, options) => {
-    const material = new THREE.MeshBasicMaterial( { color: options.color || 0xffffff } );
+    const material = new THREE.MeshBasicMaterial( {
+      color: 'color' in options ? options.color : 0xffffff
+    });
     const container = new THREE.Object3D();
     const geom = new THREE.Geometry();
-    const y = options.y || y;
+    const y = options.y || 0;
 
     geom.vertices.push(new THREE.Vector3(xzMin.x, y, xzMin.y));
     geom.vertices.push(new THREE.Vector3(xzMax.x, y, xzMin.y));
@@ -42,6 +44,14 @@ Rect.solidRect = (xzMin, xzMax, options) => {
     const mesh = new THREE.Mesh( geom, material ) ;
 
     container.add(mesh);
+
+    if ('outlinecolor' in options) {
+      container.add(Rect.rect(xzMin, xzMax, {
+        color: options.outlinecolor,
+        y: y + 0.05
+      }));
+    }
+
     return container;
 };
 

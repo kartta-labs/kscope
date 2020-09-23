@@ -199,6 +199,7 @@ this.requestedTiles = {};
 
       requestedTile.redRect = Rect.solidRect(tile.sceneMin, tile.sceneMax, {
         color: 0xff0000,
+        outlinecolor: 0x000000,
         y: 0.25
       });
       this.scene.add(requestedTile.redRect);
