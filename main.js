@@ -215,6 +215,7 @@ let params = (new URL(document.location)).searchParams;
 const year = params.has("year") ? parseInt(params.get("year")) : 1940;
 const tilesize = params.has("tilesize") ? parseInt(params.get("tilesize")) : 1000;
 const fetchradius = params.has("fetchradius") ? parseInt(params.get("fetchradius")) : 2;
+const dropradius = params.has("dropradius") ? parseInt(params.get("dropradius")) : 5;
 const eyeheight = params.has("eyeheight") ? parseFloat(params.get("eyeheight")) : 1.7;
 const speed = params.has("speed") ? parseFloat(params.get("speed")) : 1.0;
 
@@ -222,6 +223,7 @@ const url = location.origin + location.pathname
           + '?year='+year
           + '&tilesize='+tilesize
           + '&fetchradius='+fetchradius
+          + '&dropradius='+dropradius
           + '&eyeheight='+eyeheight
           + '&speed='+speed
           ;
@@ -247,6 +249,7 @@ const app = new App(document.getElementById('viewport'), {
   year: year,
   tilesize: tilesize,
   fetchradius: fetchradius,
+  dropradius: dropradius,
   eyeheight: eyeheight,
   speed: speed
 });

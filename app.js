@@ -18,6 +18,7 @@ class App {
    */
   constructor(container, options) {
     this.fetchradius = ('fetchradius' in options) ? options['fetchradius'] : 2;
+    this.dropradius = ('dropradius' in options) ? options['dropradius'] : 5;
     this.tilesize = ('tilesize' in options) ? options['tilesize'] : 1000;
     this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : 1.7;
     this.speed = ('speed' in options) ? options['speed'] : 1.0;
@@ -38,31 +39,31 @@ class App {
     this.container.appendChild( this.renderer.domElement );
     this.eventTracker = new EventTracker(this.container);
 
+
+    // map whose keys are bbox strings, value is an object with the following structure:
+    // {
+    //    tile: the Tile instance for the tile
+    //    object3D: the THREE.Object3D instance containing the data for the tile
+    // }
+    this.bBoxStringToSceneTileDetails = {};
+
+    //notyet // map whose keys are feature ids, values are the bbox string (key into bBoxStringToSceneTileDetails) for
+    //notyet // the tile containing that feature
+    //notyet this.featureIdToBBoxString = {};
+
     this.center = new THREE.Object3D();
     this.center.position.set(0,0,0);
     this.scene.add(this.center);
 
     //this.raycaster = new THREE.Raycaster();
 
-    this.idToFeatureProperties = {};
-
     this.movingCenterFrame = new MovingCenterFrame();
 
     this.eventMode = 'look';
 
-this.frustum = new THREE.Frustum();
-this.cameraViewProjectionMatrix = new THREE.Matrix4();
-
-this.requestedTiles = {};
-
     this.eventTracker.setMouseDownListener(e => {
       if (e.button == 2) {
-//this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
-//this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
-//const origin = new THREE.Vector3(0,0,0);
-////console.log(this.axes);
-////console.log(this.frustum.intersectsObject( this.axes ));
-//console.log(this.frustum.containsPoint(origin));
+        // noop
       }
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
@@ -181,52 +182,51 @@ this.requestedTiles = {};
   }
 
   refreshDataForNewCameraPosition() {
-    this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
-    this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
-    const origin = new THREE.Vector3(0,0,0);
-    //console.log(this.frustum.containsPoint(origin));
-
     const cameraTileIndex = this.tileIndexUnderCamera();
-    const tiles = Tiler.tileIndicesNear(cameraTileIndex, this.fetchradius)
-      .map(tile => this.tiler.tileAtIndex(tile));
-    tiles.forEach(tile => {
-      if (this.requestedTiles[tile.getBBoxString()]) { return; }
 
-      const requestedTile = {
+    const tilesNearCamera = Tiler.tileIndicesNear(cameraTileIndex, this.fetchradius)
+      .map(tileIndex => this.tiler.tileAtIndex(tileIndex));
+    tilesNearCamera.forEach(tile => {
+      if (tile.getBBoxString() in this.bBoxStringToSceneTileDetails) { return; }
+
+      const tileObject = new THREE.Object3D();
+      const tileDetails = {
+        object3D: tileObject,
         tile: tile
       };
-      this.requestedTiles[tile.getBBoxString()] = requestedTile;
+      this.bBoxStringToSceneTileDetails[tile.getBBoxString()] = tileDetails;
+      this.scene.add(tileObject);
 
-      requestedTile.redRect = Rect.solidRect(tile.getSceneMin(), tile.getSceneMax(), {
+      tileDetails.redRect = Rect.solidRect(tile.getSceneMin(), tile.getSceneMax(), {
         color: 0xff0000,
         outlinecolor: 0x000000,
         y: 0.25
       });
-      this.scene.add(requestedTile.redRect);
+      this.scene.add(tileDetails.redRect);
       this.requestRender();
 
-      this.requestRenderAfterEach(this.initializeBuildings(tile.getBBoxString(), () => {
-        this.scene.remove(requestedTile.redRect);
-        requestedTile.greenRect = Rect.rect(tile.getSceneMin(), tile.getSceneMax(), {
+      this.requestRenderAfterEach(this.initializeBuildings(tile, tileObject, () => {
+        this.scene.remove(tileDetails.redRect);
+        tileDetails.greenRect = Rect.rect(tile.getSceneMin(), tile.getSceneMax(), {
           color: 0x00ff00,
           linewidth: 3,
           y: 0.5
         });
-        this.scene.add(requestedTile.greenRect);
+        this.scene.add(tileDetails.greenRect);
         this.requestRender();
       }));
-
     });
-  }
 
-  reportCanSeeOrigin() {
-// Experiment for checking whether a location is in the viewing frustum.  This experiment checks (0,0,0) but same
-// technique will work for any coords.  Can use this to decide which map tiles are visible (approximate by just
-// checking visibility of tile centers?).
-    this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
-    this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
-    const origin = new THREE.Vector3(0,0,0);
-    //console.log(this.frustum.containsPoint(origin));
+    Object.keys(this.bBoxStringToSceneTileDetails).forEach(bBoxString => {
+      const tileDetails = this.bBoxStringToSceneTileDetails[bBoxString];
+      const tileIndex = tileDetails.tile.getTileIndex();
+      if (Tiler.tileIndexDistance(tileIndex, cameraTileIndex) >= this.dropradius) {
+        this.scene.remove(tileDetails.object3D);
+        if (tileDetails.redRect) { this.scene.remove(tileDetails.redRect); }
+        if (tileDetails.greenRect) { this.scene.remove(tileDetails.greenRect); }
+        delete(this.bBoxStringToSceneTileDetails[bBoxString]);
+      }
+    });
   }
 
   initializeLights() {
@@ -350,14 +350,14 @@ this.requestedTiles = {};
     });
   }
 
-  initializeBuildings(bbox, doneFunc) {
-      const url = Settings.endpoint + '?bbox=' + bbox;
+  initializeBuildings(tile, root, doneFunc) {
+      const url = Settings.endpoint + '?bbox=' + tile.getBBoxString();
       return fetch(url)
           .then(response => {
              return response.json();
           })
           .then(data => {
-             this.processFeatures(data);
+             this.processFeatures(data, root);
           })
           .then(() => {
             if (doneFunc) { doneFunc(); }
@@ -371,7 +371,7 @@ this.requestedTiles = {};
    * @param {string} feature A polygon geographic feature of a footprint.
    * @param {number} numberOfLevels
    */
-  loadFeature(feature, numberOfLevels, options) {
+  loadFeature(feature, numberOfLevels, tileObject, options) {
     try{
       options = options || {};
       const shape =
@@ -396,7 +396,8 @@ this.requestedTiles = {};
       // TODO: set visibility based on current year and the values of
       //   feature.properties.start_date and feature.properties.end_date
       mesh.visible = true;
-      this.scene.add(mesh);
+      tileObject.add(mesh);
+      //this.scene.add(mesh);
       //xx if (!this.idToMesh[feature.properties.id]) {
       //xx   mesh.name = feature.properties.id;
       //xx   this.idToMesh[mesh.name] = mesh;
@@ -436,24 +437,23 @@ this.requestedTiles = {};
     return mesh;
   }
 
-  processFeatures(response) {
+  processFeatures(response, root) {
     const features = response.data;
 
     //console.log('got ' + features.length + ' features');
     for (let i = 0; i < features.length; i++) {
-      this.idToFeatureProperties[features[i].id] = features[i].properties;
       let numberOfLevels = 0;
       if (features[i].properties['building:levels']) {
         numberOfLevels = features[i].properties['building:levels'];
       }
 
       if(features[i].properties['building']){
-        this.loadFeature(features[i], numberOfLevels, {
+        this.loadFeature(features[i], numberOfLevels, root, {
           //map: numberOfLevels > 0 ? checkedTexture : undefined
           map: undefined
         });
       } else if (features[i].properties['building:part']) {
-        this.loadFeature(features[i], numberOfLevels, {
+        this.loadFeature(features[i], numberOfLevels, root, {
           //map: numberOfLevels > 0 ? checkedTexture : undefined
           map: undefined
         });
@@ -462,7 +462,7 @@ this.requestedTiles = {};
         // sidewalks, that we use for buildings. This works by assuming sidewalks
         // as flat (i.e., with zero stories) buildings. Ideally we should have a
         // separate function to construct each map feature in 3D.
-        this.loadFeature(features[i], numberOfLevels, {
+        this.loadFeature(features[i], numberOfLevels, root, {
           color: new THREE.Color(0.8, 0.8, 0.8),
           extrudeDepth: -0.15,  // ~ 6 inches, in meters
           receiveShadows: true,
@@ -471,9 +471,7 @@ this.requestedTiles = {};
         console.log('feature is not supported for rendering.');
       }
     }
-    this.processedFeatures = true;
   }
-
 
   // Request a single render pass in the next animation frame, unless one has already
   // been requested (no point in rendering twice for the same frame).
@@ -485,7 +483,7 @@ this.requestedTiles = {};
     requestAnimationFrame(() => {
       this.renderRequested = false;
       this.renderer.render( this.scene, this.camera );
-this.reportCanSeeOrigin();
+      //console.log([window.performance.memory.totalJSHeapSize, window.performance.memory.usedJSHeapSize]);
     });
   }
 

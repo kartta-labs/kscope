@@ -11,13 +11,14 @@ import {Coords} from "./coords.js";
  * although over small distances they will be very close to straight.n
  */
 class Tile {
-  constructor(lonLatMinDegrees, lonLatMaxDegrees, sceneMin, sceneMax) {
+  constructor(lonLatMinDegrees, lonLatMaxDegrees, sceneMin, sceneMax, tileIndex) {
     this.lonLatMinDegrees = lonLatMinDegrees;
     this.lonLatMaxDegrees = lonLatMaxDegrees;
     this.bBoxString = lonLatMinDegrees.x + ',' + lonLatMinDegrees.y
           + ',' + lonLatMaxDegrees.x + ',' + lonLatMaxDegrees.y;
     this.sceneMin = sceneMin;
     this.sceneMax = sceneMax;
+    this.tileIndex = tileIndex;
   }
 
   getLonLatMinDegrees() {
@@ -38,6 +39,10 @@ class Tile {
 
   getSceneMax() {
     return this.sceneMax;
+  }
+
+  getTileIndex() {
+    return this.tileIndex;
   }
 }
 
@@ -86,7 +91,8 @@ class Tiler {
     return new Tile(minLonLatDegrees,
                     maxLonLatDegrees,
                     this.coords.lonLatDegreesToSceneCoords(minLonLatDegrees),
-                    this.coords.lonLatDegreesToSceneCoords(maxLonLatDegrees));
+                    this.coords.lonLatDegreesToSceneCoords(maxLonLatDegrees),
+                    tileIndex);
   }
 
   /**
@@ -114,9 +120,9 @@ class Tiler {
    * starting with the index to the right of tileIndex.
    */
   static tileIndicesNear(tileIndex, radius) {
-    const currentTileIndex = tileIndex;
+    const currentTileIndex = [tileIndex[0], tileIndex[1]];
     const tileIndices = [];
-    tileIndices.push([currentTileIndex[0], currentTileIndex[1]]); // pushes copy of tileIndex array
+    tileIndices.push([currentTileIndex[0], currentTileIndex[1]]);
     const iMax = 2*radius + 1;
     let offset = 1;
     let i = 1;
@@ -135,6 +141,15 @@ class Tiler {
       ++i;
     }
     return tileIndices;
+  }
+
+  /**
+   * Returns the "distance" between two tile indices. Specifically, this is just
+   * the max of the distances between the 2 coordinate values.
+   */
+  static tileIndexDistance(tileIndex1, tileIndex2) {
+    return Math.max(Math.abs(tileIndex1[0] - tileIndex2[0]),
+                    Math.abs(tileIndex1[1] - tileIndex2[1]));
   }
 };
 
