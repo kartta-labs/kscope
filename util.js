@@ -22,43 +22,51 @@ Util.generateRandomGreyColor = (brightness, variation) => {
   return new THREE.Color(v,v,v);
 };
 
-Util.tileAt = (lonLatDegrees, tileSizeMicroDegrees) => {
+Util.tileIndexAtLonLatDegrees = (lonLatDegrees, tileSizeMicroDegrees) => {
   const lonMicroDegrees = lonLatDegrees.x * 1e6;
   const latMicroDegrees = lonLatDegrees.y * 1e6;
-  const xmin = tileSizeMicroDegrees * Math.floor(lonMicroDegrees / tileSizeMicroDegrees);
-  const xmax = xmin + tileSizeMicroDegrees;
-  const ymin = tileSizeMicroDegrees * Math.floor(latMicroDegrees / tileSizeMicroDegrees);
-  const ymax = ymin + tileSizeMicroDegrees;
-  return [ [xmin/1e6,ymin/1e6],  [xmax/1e6,ymax/1e6] ];
+  return [Math.floor(lonMicroDegrees / tileSizeMicroDegrees),
+          Math.floor(latMicroDegrees / tileSizeMicroDegrees)];
 };
 
-Util.tilesAt = (lonLatDegrees, n, tileSizeMicroDegrees) => {
-  const lonMicroDegrees = lonLatDegrees.x * 1e6;
-  const latMicroDegrees = lonLatDegrees.y * 1e6;
-  const xmin = tileSizeMicroDegrees * Math.floor(lonMicroDegrees / tileSizeMicroDegrees);
-  const ymin = tileSizeMicroDegrees * Math.floor(latMicroDegrees / tileSizeMicroDegrees);
-  const ans = [];
-  const x0 = Math.floor(n/2);
-  const y0 = Math.floor(n/2);
-  for (let xi = 0; xi < n; ++xi) {
-    const row = [];
-    for (let yi = 0; yi < n; ++yi) {
-      const thisXmin = xmin + (xi - x0) * tileSizeMicroDegrees;
-      const thisYmin = ymin + (yi - y0) * tileSizeMicroDegrees;
-      row.push(
-          [[thisXmin/1e6, thisYmin/1e6],
-           [(thisXmin+tileSizeMicroDegrees)/1e6, (thisYmin+tileSizeMicroDegrees)/1e6]]
-      );
+Util.tileAtIndex = (tileIndex, tileSizeMicroDegrees) => {
+  const minLonMicroDegrees = tileSizeMicroDegrees * tileIndex[0];
+  const maxLonMicroDegress = minLonMicroDegrees + tileSizeMicroDegrees;
+  const minLatMicroDegrees = tileSizeMicroDegrees * tileIndex[1];
+  const maxLatMicroDegrees = minLatMicroDegrees + tileSizeMicroDegrees;
+  const minLonDegrees = minLonMicroDegrees / 1e6;
+  const maxLonDegrees = maxLonMicroDegress / 1e6;
+  const minLatDegrees = minLatMicroDegrees / 1e6;
+  const maxLatDegrees = maxLatMicroDegrees / 1e6;
+  return {
+    lonLatMin: new THREE.Vector2(minLonDegrees, minLatDegrees),
+    lonLatMax: new THREE.Vector2(maxLonDegrees, maxLatDegrees),
+    bboxString: minLonDegrees + ',' + minLatDegrees + ',' + maxLonDegrees + ',' + maxLatDegrees
+  };
+};
+
+Util.tileIndicesNear = (tileIndex, radius) => {
+  const currentTileIndex = tileIndex;
+  const tileIndices = [];
+  tileIndices.push([currentTileIndex[0], currentTileIndex[1]]); // pushes copy of tileIndex array
+  const iMax = 2*radius + 1;
+  let offset = 1;
+  let i = 1;
+  while (true) {
+    const jMax = i == iMax ? i - 1 : i;
+    for (let j = 1; j <= jMax; ++j) {
+      currentTileIndex[0] += offset;
+      tileIndices.push([currentTileIndex[0], currentTileIndex[1]]);
     }
-    ans.push(row);
+    if (i == iMax) { break; }
+    for (let j = 1; j <= i; ++j) {
+      currentTileIndex[1] += offset;
+      tileIndices.push([currentTileIndex[0], currentTileIndex[1]]);
+    }
+    offset = -offset;
+    ++i;
   }
-  //ans.forEach(tile => {
-  //  console.log('[' + tile[0][0] + ',' + tile[0][1] + '] -> [' + tile[1][0] + ',' + tile[1][1] + ']');
-  //});
-  return ans;
+  return tileIndices;
 };
-
-window.tileAt = Util.tileAt;
-window.tilesAt = Util.tilesAt;
 
 export {Util};

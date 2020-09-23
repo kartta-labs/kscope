@@ -50,73 +50,17 @@ class App {
 
 this.frustum = new THREE.Frustum();
 this.cameraViewProjectionMatrix = new THREE.Matrix4();
-// baseTiles are used for 2 purposes:
-//   1. display for debugging, so we can see the tile positioins on the ground (that's why they're added to the scene below)
-//   2. querying to find the tile that the camera is currently in (over).  Since we don't have an implementation of inverse
-//      mercator projection, we just loop over each tile to check whether the current camera position is in it.
-const BASE_TILE_RADIUS = 25;
-this.baseTiles = Util.tilesAt(this.sceneOriginDegrees, 2*BASE_TILE_RADIUS+1, this.tilesize);
-this.baseTiles.forEach(row => {
-  row.forEach(tile => {
-    const a = this.coords.lonLatDegreesToSceneCoords({x: tile[0][0], y: tile[0][1]});
-    const b = this.coords.lonLatDegreesToSceneCoords({x: tile[1][0], y: tile[1][1]});
-    const rect = Rect.rect(a, b, {
-      color: 0xffffff,
-      linewidth: 3,
-      y: 0.5
-    });
-    tile.a = a;
-    tile.b = b;
-    this.scene.add(rect);
-    const redRect = Rect.solidRect(a, b, {
-      color: 0xff0000,
-      y: 0.25
-    });
-    const greyRect = Rect.solidRect(a, b, {
-      color: 0x444444,
-      y: 0.25
-    });
-    tile.redRect = redRect;
-    tile.greyRect = greyRect;
-  });
-});
-// keeps track of which tiles data has been requested for
+
 this.requestedTiles = {};
-
-
 
     this.eventTracker.setMouseDownListener(e => {
       if (e.button == 2) {
-
-//const cp = new THREE.Vector3();
-//this.camera.getWorldPosition(cp);
-////console.log(cp);
-//this.axes2.position.set(cp.x, 0, cp.z);
-//this.requestRender();
-//
 //this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
 //this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
 //const origin = new THREE.Vector3(0,0,0);
 ////console.log(this.axes);
 ////console.log(this.frustum.intersectsObject( this.axes ));
 //console.log(this.frustum.containsPoint(origin));
-
-//xx        const screenMouse = new THREE.Vector2(e.x, e.y);
-//xx        this.raycaster.setFromCamera(screenMouse, this.camera);
-//xx        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-//xxconsole.log('got ' + intersects.length + ' intersections');
-//xx        for (let i = 0; i < intersects.length; ++i) {
-//xxconsole.log('  intersected object name: ' + intersects[i].object.name);
-//xx          if (intersects[i].object.name == 'ground') {
-//xx            const groundMouse = new THREE.Vector3(
-//xx                intersects[i].point.x,
-//xx                intersects[i].point.y,
-//xx                intersects[i].point.z);
-//xx            console.log(groundMouse);
-//xx            break;
-//xx          }
-//xx        }
-
       }
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
@@ -213,26 +157,9 @@ this.requestedTiles = {};
   tileIndexUnderCamera() {
     const cameraPos = new THREE.Vector3();
     this.camera.getWorldPosition(cameraPos);
-    const cameraGroundPos = new THREE.Vector2(cameraPos.x, cameraPos.z);
-    // this is really sloppy and inefficient; TODO: make it cleaner and faster
-    for (let i = 0; i < this.baseTiles.length; ++i) {
-      for (let j = 0; j < this.baseTiles[0].length; ++j) {
-        const xmin = Math.min(this.baseTiles[i][j].a.x, this.baseTiles[i][j].b.x);
-        const xmax = Math.max(this.baseTiles[i][j].a.x, this.baseTiles[i][j].b.x);
-        const ymin = Math.min(this.baseTiles[i][j].a.y, this.baseTiles[i][j].b.y);
-        const ymax = Math.max(this.baseTiles[i][j].a.y, this.baseTiles[i][j].b.y);
-        if (xmin <= cameraGroundPos.x
-            &&
-            ymin <= cameraGroundPos.y
-            &&
-            xmax > cameraGroundPos.x
-            &&
-            ymax > cameraGroundPos.y) {
-          return [i,j];
-        }
-      }
-    }
-    return [-1,-1];
+    const cameraGroundPosScene = new THREE.Vector2(cameraPos.x, cameraPos.z);
+    const cameraGroundPosLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(cameraGroundPosScene);
+    return Util.tileIndexAtLonLatDegrees(cameraGroundPosLonLatDegrees, this.tilesize);
   }
 
   /**
@@ -251,51 +178,44 @@ this.requestedTiles = {};
     return ans;
   }
 
-  bboxQueryStringForTile(tile) {
-    return tile[0][0] + ',' + tile[0][1] + ',' + tile[1][0] + ',' + tile[1][1];
-  }
-
   refreshDataForNewCameraPosition() {
     this.cameraViewProjectionMatrix.multiplyMatrices( this.camera.projectionMatrix, this.camera.matrixWorldInverse );
     this.frustum.setFromMatrix( this.cameraViewProjectionMatrix );
     const origin = new THREE.Vector3(0,0,0);
     //console.log(this.frustum.containsPoint(origin));
 
-    const tileIndices = this.tileIndicesNear(this.tileIndexUnderCamera(), 2*this.fetchradius+1).filter(tileIndex => {
-      return (
-          tileIndex[0] >= 0
-          &&
-          tileIndex[0] < this.baseTiles.length
-          &&
-          tileIndex[1] >= 0
-          &&
-          tileIndex[1] < this.baseTiles.length
-        );
-    });
+    const cameraTileIndex = this.tileIndexUnderCamera();
+    const tiles = Util.tileIndicesNear(cameraTileIndex, this.fetchradius)
+      .map(tile => Util.tileAtIndex(tile,this.tilesize));
+    tiles.forEach(tile => {
+      if (this.requestedTiles[tile.bboxString]) { return; }
+      tile.sceneMin = this.coords.lonLatDegreesToSceneCoords(tile.lonLatMin);
+      tile.sceneMax = this.coords.lonLatDegreesToSceneCoords(tile.lonLatMax);
 
-    tileIndices.forEach(tileIndex => {
-      const tile = this.baseTiles[tileIndex[0]][tileIndex[1]];
-      const bbox = this.bboxQueryStringForTile(tile);
-      // skip this tile if already requested
-      if (this.requestedTiles[bbox]) { return; }
-      //xxconst tileCenter = new THREE.Vector3((tile[0][0] + tile[1][0])/2, 0, (tile[1][0] + tile[1][0])/2);
-      //xx// skip this tile if center not in view
-      //xxif (!this.frustum.containsPoint(tileCenter)) { return; }
-      this.requestedTiles[bbox] = {
+      const requestedTile = {
         tile: tile
       };
-      this.scene.add(tile.redRect);
-      this.requestRender();
-      //console.log('requesting data for bbox=' + bbox);
+      this.requestedTiles[tile.bboxString] = requestedTile;
 
-      this.requestRenderAfterEach(this.initializeBuildings(bbox, () => {
-        this.scene.remove(tile.redRect);
-        this.scene.add(tile.greyRect);
+      requestedTile.redRect = Rect.solidRect(tile.sceneMin, tile.sceneMax, {
+        color: 0xff0000,
+        y: 0.25
+      });
+      this.scene.add(requestedTile.redRect);
+      this.requestRender();
+
+      this.requestRenderAfterEach(this.initializeBuildings(tile.bboxString, () => {
+        this.scene.remove(requestedTile.redRect);
+        requestedTile.greenRect = Rect.rect(tile.sceneMin, tile.sceneMax, {
+          color: 0x00ff00,
+          linewidth: 3,
+          y: 0.5
+        });
+        this.scene.add(requestedTile.greenRect);
         this.requestRender();
       }));
 
     });
-
   }
 
   reportCanSeeOrigin() {
@@ -582,22 +502,10 @@ this.reportCanSeeOrigin();
 
     // action!
     this.requestRenderAfterEach(
-//        this.initializeBuildings('-74.0025,40.740981639193706,-73.9989,40.743709187058556'),
         this.initializeGround(),
         this.initializeSky());
     this.refreshDataForNewCameraPosition();
 
-//    this.requestRenderAfterEach(
-//      ...this.baseTiles.map(tile => {
-//        return this.initializeBuildings(tile[0][0] + ',' + tile[0][1] + ',' + tile[1][0] + ',' + tile[1][1]);
-//      })
-//    );
-
-
-
-    //this.requestRenderAfter(this.initializeBuildings());
-    //this.requestRenderAfter(this.initializeGround());
-    //this.requestRenderAfter(this.initializeSky());
   }
 }
 
