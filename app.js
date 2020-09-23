@@ -156,7 +156,6 @@ class App {
       }
     });
     this.eventTracker.start();
-
   }
 
   speedForEyeHeight() {
@@ -186,22 +185,6 @@ class App {
     return this.tiler.tileIndexAtLonLatDegrees(cameraGroundPosLonLatDegrees);
   }
 
-  /**
-   * Takes a single [i,j] tile index, and returns a list of N^2 tile indices with that one at its center.
-   * Has no concept of whether the indices are valid -- will return negative indices, and arbitrarily large ones.
-   * The caller should weed out any invalid ones.
-   */
-  tileIndicesNear(tileIndex, N) {
-    const d = Math.floor(N/2);
-    const ans = [];
-    for (let i = 0; i < N; ++i) {
-      for (let j = 0; j < N; ++j) {
-        ans.push([tileIndex[0] + i - d, tileIndex[1] + j - d]);
-      }
-    }
-    return ans;
-  }
-
   refreshDataForNewCameraPosition() {
     const cameraTileIndex = this.tileIndexUnderCamera();
 
@@ -213,7 +196,8 @@ class App {
       const tileObject = new THREE.Object3D();
       const tileDetails = {
         object3D: tileObject,
-        tile: tile
+        tile: tile,
+        featureIds: []
       };
       this.bBoxStringToSceneTileDetails[tile.getBBoxString()] = tileDetails;
       this.scene.add(tileObject);
@@ -250,9 +234,13 @@ class App {
           if (tileDetails.redRect) { this.scene.remove(tileDetails.redRect); }
           if (tileDetails.greenRect) { this.scene.remove(tileDetails.greenRect); }
         }
+        tileDetails.featureIds.forEach(featureId => {
+          delete(this.featureIdToBBoxString[featureId]);
+        });
         delete(this.bBoxStringToSceneTileDetails[bBoxString]);
       }
     });
+    this.requestRender();
   }
 
   initializeLights() {
@@ -532,12 +520,10 @@ class App {
     //console.log('got ' + features.length + ' features');
     for (let i = 0; i < features.length; i++) {
 
-if (false) {
       if (features[i].properties.id in this.featureIdToBBoxString) {
-        // object has already been loaded from another tile
-        return;
+        // object has already been loaded from another tile, so skip it
+        continue;
       }
-}
 
       let numberOfLevels = 0;
       if (features[i].properties['building:levels']) {
@@ -571,6 +557,7 @@ if (false) {
       if (extrusion != null) {
         this.featureIdToBBoxString[features[i].properties.id] = tileDetails.tile.getBBoxString();
         tileDetails.object3D.add(extrusion);
+        tileDetails.featureIds.push(features[i].properties.id);
       }
     }
   }
