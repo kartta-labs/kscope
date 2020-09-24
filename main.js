@@ -214,7 +214,7 @@ const params = (new URL(document.location)).searchParams;
 
 const year = params.has("year") ? parseInt(params.get("year")) : Settings.year;
 Util.updatePageUrl({year: year});
-const level = params.has("level") ? parseInt(params.get("level")) : Settings.level;
+const level = params.has("level") ? params.get("level") : Settings.level;
 
 const options = {};
 
@@ -258,6 +258,7 @@ window.addEventListener('load', () => {
   }
 
   let currentLevel = level;
+console.log('level initialized to ', level);
   updateEyeLevelButtonStates(level);
 
   function handleEyeLevelButtonClick(e) {
