@@ -263,22 +263,10 @@ class App {
   updateCamera() {
 
     this.camera.matrix.identity();
-    this.camera.matrix.multiply(this.movingCenterFrame.computeTransform(
-        /* moving= */ this.camera,
-        /* center= */ this.camera,
-        /* frame= */ this.camera,
-        new THREE.Matrix4().makeRotationY(this.cameraYAngle)));
-    this.camera.matrix.multiply(this.movingCenterFrame.computeTransform(
-        /* moving= */ this.camera,
-        /* center= */ this.camera,
-        /* frame= */ this.camera,
-        new THREE.Matrix4().makeRotationX(this.cameraXAngle)));
-    this.camera.matrix.multiply(this.movingCenterFrame.computeTransform(
-        /* moving= */ this.camera,
-        /* center= */ this.camera,
-        /* frame= */ this.scene,
-        new THREE.Matrix4().makeTranslation(this.cameraX, this.cameraY, this.cameraZ)));
 
+    this.camera.matrix.multiply(new THREE.Matrix4().makeTranslation(this.cameraX, this.cameraY, this.cameraZ));
+    this.camera.matrix.multiply(new THREE.Matrix4().makeRotationY(this.cameraYAngle));
+    this.camera.matrix.multiply(new THREE.Matrix4().makeRotationX(this.cameraXAngle));
 
     const url = new URL(document.location);
     const params = url.searchParams;
