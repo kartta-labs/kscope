@@ -352,6 +352,8 @@ class App {
             if (Settings.shadows) {
               plane.receiveShadow = true;
             }
+            plane.position.x = this.cameraX;
+            plane.position.z = this.cameraZ;
             this.ground = plane;
             this.scene.add(plane);
           });
@@ -360,6 +362,8 @@ class App {
   initializeSky() {
     const sb = new SkyBox();
     return sb.getObject().then(skyboxObject => {
+      skyboxObject.position.x = this.cameraX;
+      skyboxObject.position.z = this.cameraZ;
       this.skybox = skyboxObject;
       this.scene.add(skyboxObject);
     });
