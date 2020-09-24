@@ -62,15 +62,23 @@ let Settings = {
   'pitch': 0,
   'yaw': 0,
 
-  // eyeheight,eyex,eyez give the initial default position of the eye
+  // eyex,eyez give the initial default position of the eye
   // (camera) in scene coordinates, relative to the scene origin
   // above.  If no lon/lat option is passed to the app, the camera's
   // initial lon/lat will be initialized to be eyex meters east and
-  // eyez meters south of the scene origin.  The camera height is
-  // given by eyeheight, which can be overridden by an option.
-  'eyeheight' : 1.7,
+  // eyez meters south of the scene origin.
   'eyex': 0,
-  'eyez': 200
+  'eyez': 200,
+
+  'level': 'street',  // default camera level ('bird' or 'street')
+  'initialPitch': {
+    'street': 0,    // pitch angle set to this when entering street level
+    'bird': -0.75   // pitch angle set to this when entering bird level
+  },
+  'eyeHeight': {
+    'street': 1.7,
+    'bird': 200
+  }
 
 };
 

@@ -44,7 +44,7 @@ Util.stringToBoolean = (s) => {
 
 Util.setOptionFromUrlParams = (options, params, name, parse) => {
   if (params.has(name)) {
-    options[name] = parse(params.get(name));
+    options[name] = parse ? parse(params.get(name)) : params.get(name);
   }
 };
 

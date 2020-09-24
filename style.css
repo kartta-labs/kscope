@@ -41,6 +41,7 @@ header {
 
 #viewport {
   flex: 1;
+  position: relative;
 }
 
 /* The slider itself */
@@ -78,4 +79,39 @@ header {
   height: 25px; /* Slider handle height */
   background: #4CAF50; /* Green background */
   cursor: pointer; /* Cursor on hover */
+}
+
+.eyelevel-button img {
+  /* actual image size is 136x128 */
+  width: 40px; /* height will adjust accordingly */
+}
+
+.eyelevel-button {
+  border-radius: 5px;
+  position: absolute;
+  right: 10px;
+  border: 1px solid #aaaaaa;
+  background-color: white;
+  margin: 2px;
+}
+
+.eyelevel-button:hover {
+  background-color: #aaaaaa;
+}
+
+.eyelevel-button.street-level {
+  top: 10px;
+}
+
+.eyelevel-button.bird-level {
+  top: 70px;
+}
+
+.eyelevel-active {
+  border: 3px solid blue;
+  background-color: white;
+  margin: 0px;
+}
+.eyelevel-active:hover {
+  background-color: white;
 }

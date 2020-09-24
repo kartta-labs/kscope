@@ -16,7 +16,7 @@ class App {
     this.fetchradius = ('fetchradius' in options) ? options['fetchradius'] : Settings.fetchradius;
     this.dropradius = ('dropradius' in options) ? options['dropradius'] : Settings.dropradius;
     this.tilesize = ('tilesize' in options) ? options['tilesize'] : Settings.tilesize;
-    this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : Settings.eyeheight;
+    this.level = ('level' in options) ? options['level'] : Settings.level;
     this.speed = ('speed' in options) ? options['speed'] : Settings.speed;
     this.debug = ('debug' in options) ? options['debug'] : Settings.debug;
     this.year = ('year' in options) ? options['year'] : Settings.year;
@@ -35,7 +35,7 @@ class App {
     const defaultCameraSceneCoords = new THREE.Vector2(defaultCameraSceneX, defaultCameraSceneZ);
     const defaultCameraLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(defaultCameraSceneCoords);
 
-    this.initialCameraXAngle = ('pitch' in options) ? options['pitch'] : 0;
+    this.initialCameraXAngle = ('pitch' in options) ? options['pitch'] : Settings.initialPitch[this.level];
     this.initialCameraYAngle = ('yaw' in options) ? options['yaw'] : 0;
 
     const initialCameraLonDegrees = ('lon' in options) ? options['lon'] : defaultCameraLonLatDegrees.x;
@@ -44,7 +44,7 @@ class App {
     const initialCameraSceneCoords = this.coords.lonLatDegreesToSceneCoords(initialCameraLonLatDegrees);
 
     this.initialCameraX = initialCameraSceneCoords.x;
-    this.initialCameraY = this.eyeheight;
+    this.initialCameraY = Settings.eyeHeight[this.level];
     this.initialCameraZ = initialCameraSceneCoords.y;
 
     this.tiler = new Tiler(this.tilesize, this.coords);
@@ -129,13 +129,13 @@ class App {
       //console.log('mouseWheel: e = ', e);
     }).setKeyPressListener(e => {
       if (e.key == 'w') {
-        this.walkCamera(this.speedForEyeHeight());
+        this.walkCamera(this.speedForCameraHeight());
       } else if (e.key == 's') {
-        this.walkCamera(-this.speedForEyeHeight());
+        this.walkCamera(-this.speedForCameraHeight());
       } else if (e.key == 'a') {
-        this.walkCamera(this.speedForEyeHeight(), /* sideways= */true);
+        this.walkCamera(this.speedForCameraHeight(), /* sideways= */true);
       } else if (e.key == 'd') {
-        this.walkCamera(-this.speedForEyeHeight(), /* sideways= */true);
+        this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
       }
     }).setKeyUpListener(e => {
       if (e.key == 'l') {
@@ -179,9 +179,21 @@ class App {
     this.requestRender();
   }
 
-  speedForEyeHeight() {
+  /*
+   * Set the eye (camera) height and request a render.
+   * @param {String} level 'bird' or 'street'
+   */
+  setLevel(level) {
+    this.level = level;
+    this.cameraY = Settings.eyeHeight[this.level];
+    this.cameraXAngle = Settings.initialPitch[level];
+    this.updateCamera();
+    this.requestRender();
+  }
+
+  speedForCameraHeight() {
      // linearly interpolate between speed at height 1.7, and 5*speed at height 85.
-     return this.speed * (1.0 + 5.0 * (this.eyeheight - 1.7) / (85.0 - 1.7));
+     return this.speed * (1.0 + 5.0 * (this.cameraY - 1.7) / (85.0 - 1.7));
   }
 
   walkCamera(amount, sideways) {

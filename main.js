@@ -221,7 +221,7 @@ Util.setOptionFromUrlParams(options, params, "year", parseInt);
 Util.setOptionFromUrlParams(options, params, "tilesize", parseInt);
 Util.setOptionFromUrlParams(options, params, "fetchradius", parseInt);
 Util.setOptionFromUrlParams(options, params, "dropradius", parseInt);
-Util.setOptionFromUrlParams(options, params, "eyeheight", parseFloat);
+Util.setOptionFromUrlParams(options, params, "level");
 Util.setOptionFromUrlParams(options, params, "speed", parseFloat);
 Util.setOptionFromUrlParams(options, params, "debug", Util.stringToBoolean);
 Util.setOptionFromUrlParams(options, params, "lon", parseFloat);
@@ -242,5 +242,27 @@ window.addEventListener('load', () => {
     app.setYear(year);
     Util.updatePageUrl({year: year});
   }
+
+  const /** !Element */ streetLevelButton = document.getElementById('street-level-button');
+  const /** !Element */ birdLevelButton = document.getElementById('bird-level-button');
+
+  let currentEyeLevel = 'street';
+
+  function handleEyeLevelButtonClick(e) {
+    const eyeLevel = this.id == 'street-level-button' ? 'street' : 'bird';
+    if (eyeLevel == currentEyeLevel) { return; }
+    if (eyeLevel == 'street') {
+      birdLevelButton.classList.remove('eyelevel-active');
+      streetLevelButton.classList.add('eyelevel-active');
+    } else {
+      streetLevelButton.classList.remove('eyelevel-active');
+      birdLevelButton.classList.add('eyelevel-active');
+    }
+    app.setLevel(eyeLevel);
+    currentEyeLevel = eyeLevel;
+  }
+  birdLevelButton.onclick = handleEyeLevelButtonClick;
+  streetLevelButton.onclick = handleEyeLevelButtonClick;
+
   app.initialize();
 });
