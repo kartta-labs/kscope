@@ -55,8 +55,8 @@ let Settings = {
 
   'year': 1940,
   'tilesize' : 1000,
-  'fetchradius' : 2,
-  'dropradius' : 5,
+  'fetchradius' : 8,
+  'dropradius' : 11,
   'speed' : 1.0,
   'debug' : false,
   'pitch': 0,
