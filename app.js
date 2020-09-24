@@ -52,16 +52,22 @@ class App {
     this.eventTracker = new EventTracker(this.container);
 
 
-    // map whose keys are bbox strings, value is an object with the following structure:
-    // {
-    //    tile: the Tile instance for the tile
-    //    object3D: the THREE.Object3D instance containing the data for the tile
-    // }
-    this.bBoxStringToSceneTileDetails = {};
+    // map whose keys are bbox strings, value is an object giving details about the corresponding data tile
+    this.bBoxStringToSceneTileDetails = {
+      // "-74.002,40.742,-74.001,40.743": {
+      //    tile: the Tile instance for the tile
+      //    object3D: the THREE.Object3D instance containing the scene objects for the tile
+      // }
+    };
 
-    // map whose keys are feature ids, values are the bbox string (key into bBoxStringToSceneTileDetails) for
-    // the tile containing that feature
-    this.featureIdToBBoxString = {};
+    // map whose keys are feature ids, values is an object giving details about that feature
+    this.featureIdToObjectDetails = {
+      // "way/52343423": {
+      //   bBoxString: the bbox string of the tile containing this feature
+      //   properties: the properties object for the feature
+      //   object3D: the THREE.Object3D instance in the scene for this feature
+      // }
+    };
 
     this.center = new THREE.Object3D();
     this.center.position.set(0,0,0);
@@ -222,7 +228,7 @@ class App {
           if (tileDetails.greenRect) { this.scene.remove(tileDetails.greenRect); }
         }
         tileDetails.featureIds.forEach(featureId => {
-          delete(this.featureIdToBBoxString[featureId]);
+          delete(this.featureIdToObjectDetails[featureId]);
         });
         delete(this.bBoxStringToSceneTileDetails[bBoxString]);
       }
@@ -360,7 +366,7 @@ class App {
 
     for (let i = 0; i < features.length; i++) {
 
-      if (features[i].properties.id in this.featureIdToBBoxString) {
+      if (features[i].properties.id in this.featureIdToObjectDetails) {
         // object has already been loaded from another tile, so skip it
         continue;
       }
@@ -407,7 +413,11 @@ class App {
         console.log('feature is not supported for rendering.');
       }
       if (extrusion != null) {
-        this.featureIdToBBoxString[features[i].properties.id] = tileDetails.tile.getBBoxString();
+        this.featureIdToObjectDetails[features[i].properties.id] = {
+          bBoxString: tileDetails.tile.getBBoxString(),
+          properties: features[i].properties,
+          object3D: extrusion
+        };
         tileDetails.object3D.add(extrusion);
         tileDetails.featureIds.push(features[i].properties.id);
       }
