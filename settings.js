@@ -14,60 +14,8 @@
 
 import {Config} from "./config.js";
 
-/**
- * @fileoverview This file contains settings parameters for waybak demo v2 3D
- * visualizer webpage. Note that this is just an example and acts as a template.
- */
-
-const shadowLights = {
-    'Ambient': [
-      {'color': 0xffffff, 'intensity': 0.35},
-      {'color': 0xeedd82, 'intensity': 0.35}
-    ],
-    'directionalWithShadow': [{
-      'position': {'x': 1000, 'y': 1000, 'z': 0},
-      'color': 0xeedd82,
-      'intensity': 0.60,
-      'shadowCameraNear': 0,
-      'shadowCameraFar': 5000,
-      'shadowCameraLeft': -500,
-      'shadowCameraRight': 500,
-      'shadowCameraTop': 500,
-      'shadowCameraBottom': -500,
-      'shadowMapSizeWidth': 1 * 1024,
-      'shadowMapSizeHeight': 1 * 1024,
-      'shadowBias': 0.0005, // 0.00001,
-      'numberOfExtraLightstoSoftenShadow':
-          0, /* was:2 Each extra light, means an additional round of
-                rendering, which is computationally expensive.*/
-      'totalSoftenningOffsetInMeters': 20,
-      'addOppositeLight': true
-    }]
-};
-
-const nonShadowLights = {
-    'Ambient': [
-      {'color': 0xcccccc, 'intensity': 0.2},
-    ],
-    'directional': [
-        {
-            'position': {'x': -1, 'y': -0.5, 'z': -1},
-            'color': 0xffffff,
-            'intensity': 0.6
-        },
-        {
-            'position': {'x': -1, 'y': -0.5, 'z': 1},
-            'color': 0xffffff,
-            'intensity': 0.6
-        }
-    ]
-};
-
 let Settings = {
-  'eyeHeightInMeters': 1.7, // ?? unused ??
   'endpoint': Config.endpoint,
-  'bbox': '-74.005412,40.7412755,-73.997376,40.743333', // ?? unused ??
-  //'fullUrl': './kartta.json',
   'origin': {
     'latitudeInMicroDegrees': 40741057,
     'longitudeInMicroDegrees': -74001565,
@@ -77,11 +25,24 @@ let Settings = {
   'fieldOfView': 45.0,
   'nearPlane': 1.0,
   'farPlane': 5000,
-  'tileWidthInMercator': 0.00002, // ?? unused ??
-//  'shadows': true,
-//  'lights': shadowLights,
   'shadows': false,
-  'lights': nonShadowLights,
+  'lights': {
+    'Ambient': [
+      {'color': 0xcccccc, 'intensity': 0.2}
+    ],
+    'directional': [
+      {
+        'position': {'x': -1, 'y': -0.5, 'z': -1},
+        'color': 0xffffff,
+        'intensity': 0.6
+      },
+      {
+        'position': {'x': -1, 'y': -0.5, 'z': 1},
+        'color': 0xffffff,
+        'intensity': 0.6
+      }
+    ]
+  },
 
   'buildingsReceiveShadows': false,
   'buildingXZScaleShrinkFactor': 0.9999,

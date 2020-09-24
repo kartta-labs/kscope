@@ -6,7 +6,7 @@ of the Kartta Labs suite of applications.
 
 To run a local copy of Renderer
 
-1. Copy `settings.example.js` to `settings.js`
-2. Set the backend endpoints and make your desired changes in `settings.js` file.
+1. Copy `config.example.js` to `config.js`
+2. Set the backend endpoint in `config.js` file.
 3. Run a webserver in the `renderer` directory with your favorite http server application (e.g., `python -m SimpleHTTPServer`)
 4. You can visit the application at http://localhost:8000 or any other port that you chose at step 3.
