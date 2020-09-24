@@ -327,13 +327,15 @@ class App {
 
     this.scene.add(this.camera);
 
-    this.axes = Axes.axes3D({
-      length: 50,
-      tipRadius: 1.0,
-      tipHeight: 6.0
-    });
-    this.axes.position.set(0,0.2,0);
-    this.scene.add(this.axes);
+    if (this.debug) {
+      this.axes = Axes.axes3D({
+        length: 50,
+        tipRadius: 1.0,
+        tipHeight: 6.0
+      });
+      this.axes.position.set(0,0.2,0);
+      this.scene.add(this.axes);
+    }
   }
 
   initializeGround() {
