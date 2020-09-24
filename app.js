@@ -19,6 +19,7 @@ class App {
     this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : 1.7;
     this.speed = ('speed' in options) ? options['speed'] : 1.0;
     this.debug = ('debug' in options) ? options['debug'] : false;
+    this.year = ('year' in options) ? options['year'] : 1940;
 
     this.renderRequested = false;
     this.container = container;
@@ -57,6 +58,7 @@ class App {
       // "-74.002,40.742,-74.001,40.743": {
       //    tile: the Tile instance for the tile
       //    object3D: the THREE.Object3D instance containing the scene objects for the tile
+      //    featureIds: list of the ids of all features loaded for this tile
       // }
     };
 
@@ -149,6 +151,29 @@ class App {
       }
     });
     this.eventTracker.start();
+  }
+
+  static featureVisibleInYear(feature, year) {
+    const start_date =
+      ('start_date' in feature.properties)
+      ? parseInt(feature.properties['start_date'])
+      : 0;
+    const end_date =
+      ('end_date' in feature.properties)
+      ? parseInt(feature.properties['end_date'])
+      : 10000;
+    return start_date <= year && year < end_date;
+  }
+
+  /*
+   * Set the current year, update the visibility of all objects accordingly, and request a render.
+   */
+  setYear(year) {
+    this.year = year;
+    Object.keys(this.featureIdToObjectDetails).forEach(featureId => {
+      objectDetails.object3D.visible = App.featureVisibleInYear(this.featureIdToObjectDetails[featureId], year);
+    });
+    this.requestRender();
   }
 
   speedForEyeHeight() {
@@ -418,6 +443,7 @@ class App {
           properties: features[i].properties,
           object3D: extrusion
         };
+        extrusion.visible = App.featureVisibleInYear(features[i], this.year);
         tileDetails.object3D.add(extrusion);
         tileDetails.featureIds.push(features[i].properties.id);
       }
