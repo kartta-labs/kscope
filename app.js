@@ -2,6 +2,7 @@ import {Axes} from "./axes.js";
 import {Rect} from "./rect.js";
 import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
+import {Extruder} from "./extruder.js";
 import {MovingCenterFrame} from "./moving_center_frame.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
@@ -9,10 +10,6 @@ import {Util} from "./util.js";
 import {Tile, Tiler} from "./tiles.js";
 
 class App {
-  BRIGHTNESS_OF_EXTRUDED_MODELS = 0.6;
-  COLOR_VARIATION_OF_EXTRUDED_MODELS = 0.1;
-  AVERAGE_STOREY_HEIGHT_METERS = 4.3;
-
   /**
    */
   constructor(container, options) {
@@ -30,7 +27,7 @@ class App {
     this.sceneOriginDegrees = new THREE.Vector2(Settings.origin.longitudeInMicroDegrees / 1.0e6,
                                                 Settings.origin.latitudeInMicroDegrees / 1.0e6);
     this.coords = new Coords(this.sceneOriginDegrees);
-
+    this.extruder = new Extruder(this.coords);
 
     const defaultCameraSceneCoords = new THREE.Vector2(0, 200);
     const defaultCameraLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(defaultCameraSceneCoords);
@@ -358,85 +355,9 @@ class App {
   }
 
 
-  /**
-   * Returns a THREE.Mesh (subclass of THREE.Object3D) instance which represents an extrusion
-   * of a polygonal geographic feature.
-   * @param {Object} feature A polygon geographic feature of a footprint.
-   * @param {number} numberOfLevels
-   * @param {Object} options
-   * @returns {Object} a new THREE.Mesh instance, or null if any errors are encountered
-   *
-   * The depth of the extrusion can be determined, confusingly, in several ways:
-   *   1. if options['extrudeDepth'] is present, extrude depth is set to it;
-   *      note that options['extrudeDepth'] should be < 0.
-   *   2. otherwise, if the feature has a property named 'height', extrude depth
-   *      is set to -feature.properties['height'] (note this property value can
-   *      be a string and will be parsed into a floating point number)
-   *   3. otherwise, if numberOfLevels > 0, extrude depth is set to
-   *      -numberOfLevels * AVERAGE_STOREY_HEIGHT_METERS,
-   *   4. otherwise, extrude depth is set to -MINIMUM_EXTRUSION_METERS
-   */
-  extrudeFeature(feature, numberOfLevels, options) {
-    try{
-      options = options || {};
-      const shape =
-        Util.featureToSceneCoordsShape(feature, this.coords);
-
-      const MINIMUM_EXTRUSION_METERS = 0.01;
-
-      const extrudeSettings = {
-        depth: numberOfLevels > 0 ? -numberOfLevels * this.AVERAGE_STOREY_HEIGHT_METERS :
-                                    -MINIMUM_EXTRUSION_METERS,
-        bevelEnabled: false
-      };
-      if (feature.properties['height']) {
-        extrudeSettings.depth = -parseFloat(feature.properties['height']);
-      }
-      if (options.extrudeDepth) {
-        extrudeSettings.depth = options.extrudeDepth;
-      }
-      const mesh = this.shapeToMesh(shape, extrudeSettings, options);
-      // NOTE: id of this feature  is feature.properties.id; use that later to track this object
-      mesh.name = feature.properties.id;
-      // TODO: set visibility based on current year and the values of
-      //   feature.properties.start_date and feature.properties.end_date
-      mesh.visible = true;
-      return mesh;
-    } catch (e) {
-      console.log('Error while loading feature '+ feature.id + ': ' +e);
-    }
-    return null;
-  }
-
-  /**
-   * Extrudes a shape to create a Mesh.
-   * @param {!THREE.Shape} shape
-   * @param {!Object} extrudeSettings
-   * @param {?Object} options
-   * @return {!THREE.Mesh}
-   */
-  shapeToMesh(shape, extrudeSettings, options) {
-    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // Nudge extruded objects up off the ground plane just a tad; this prevents objects
-    // with height 0 from flickering due to being exactly coplanar with the ground.
-    geometry.vertices.forEach(v => {
-      v.z -= 0.02;
-    });
-    options = options || {};
-    const mat = new THREE.MeshPhongMaterial({
-      color: options.color ? options.color : Util.generateRandomGreyColor(this.BRIGHTNESS_OF_EXTRUDED_MODELS,
-                                                                    this.COLOR_VARIATION_OF_EXTRUDED_MODELS),
-      side: options.side == null ? THREE.DoubleSide : options.side
-    });
-    const mesh = THREE.SceneUtils.createMultiMaterialObject(geometry, [mat]);
-    mesh.rotation.x = 90 * (Math.PI / 180);
-    return mesh;
-  }
-
   processFeatures(response, tileDetails) {
     const features = response.data;
 
-    //console.log('got ' + features.length + ' features');
     for (let i = 0; i < features.length; i++) {
 
       if (features[i].properties.id in this.featureIdToBBoxString) {
@@ -451,24 +372,36 @@ class App {
 
       let extrusion = null;
       if(features[i].properties['building']){
-        extrusion = this.extrudeFeature(features[i], numberOfLevels, {
+        extrusion = this.extruder.extrudeFeature(features[i], numberOfLevels, {
           //map: numberOfLevels > 0 ? checkedTexture : undefined
-          map: undefined
+          map: undefined,
+          averageStoreyHeightMeters: Settings.averageStoreyHeightMeters,
+          minimumExtrusionMeters: Settings.minimumExtrusionMeters,
+          brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
+          colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
       } else if (features[i].properties['building:part']) {
-        extrusion = this.extrudeFeature(features[i], numberOfLevels, {
+        extrusion = this.extruder.extrudeFeature(features[i], numberOfLevels, {
           //map: numberOfLevels > 0 ? checkedTexture : undefined
-          map: undefined
+          map: undefined,
+          averageStoreyHeightMeters: Settings.averageStoreyHeightMeters,
+          minimumExtrusionMeters: Settings.minimumExtrusionMeters,
+          brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
+          colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
       } else if (features[i].properties['sidewalk']) {
         // We currently use the same function to load and minimally extrude
         // sidewalks, that we use for buildings. This works by assuming sidewalks
         // as flat (i.e., with zero stories) buildings. Ideally we should have a
         // separate function to construct each map feature in 3D.
-        extrusion = this.extrudeFeature(features[i], numberOfLevels, {
+        extrusion = this.extruder.extrudeFeature(features[i], numberOfLevels, {
           color: new THREE.Color(0.8, 0.8, 0.8),
           extrudeDepth: -0.15,  // ~ 6 inches, in meters
           receiveShadows: true,
+          averageStoreyHeightMeters: Settings.averageStoreyHeightMeters,
+          minimumExtrusionMeters: Settings.minimumExtrusionMeters,
+          brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
+          colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
       } else {
         console.log('feature is not supported for rendering.');

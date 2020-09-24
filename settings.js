@@ -90,6 +90,11 @@ let Settings = {
 
   'buildingsReceiveShadows': false,
   'buildingXZScaleShrinkFactor': 0.9999,
+
+  'averageStoreyHeightMeters': 4.3,
+  'minimumExtrusionMeters': 0.01,
+  'brightnessOfExtrudedModels': 0.6,
+  'colorVariationOfExtrudedModels': 0.1
 };
 
 export {Settings};
