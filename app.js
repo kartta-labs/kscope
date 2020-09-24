@@ -171,7 +171,8 @@ class App {
   setYear(year) {
     this.year = year;
     Object.keys(this.featureIdToObjectDetails).forEach(featureId => {
-      objectDetails.object3D.visible = App.featureVisibleInYear(this.featureIdToObjectDetails[featureId], year);
+      const objectDetails = this.featureIdToObjectDetails[featureId];
+      objectDetails.object3D.visible = App.featureVisibleInYear(objectDetails, year);
     });
     this.requestRender();
   }

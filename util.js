@@ -22,4 +22,19 @@ Util.generateRandomGreyColor = (brightness, variation) => {
   return new THREE.Color(v,v,v);
 };
 
+/**
+ * Updates the current page url without triggering a page reload, and without changing navigation history.
+ * Takes an object containing parameter name,value settings, and affects only those parameter values in the
+ * url -- any parameters present in the url and not present in params are left unchanged.
+ */
+Util.updatePageUrl = (params) => {
+  const url = new URL(document.location);
+  Object.keys(params).forEach(key => {
+    url.searchParams.set(key, params[key]);
+  });
+  window.history.replaceState(
+      null, '',
+      location.origin + location.pathname + '?' + url.searchParams.toString());
+};
+
 export {Util};

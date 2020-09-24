@@ -207,6 +207,7 @@
 //xxx });
 
 import {App} from "./app.js";
+import {Util} from "./util.js";
 
 
 let params = (new URL(document.location)).searchParams;
@@ -255,5 +256,18 @@ if (params.has("yaw")) { options['yaw'] = parseFloat(params.get("yaw")); }
 const app = new App(document.getElementById('viewport'), options);
 
 window.addEventListener('load', () => {
+
+  const /** !Element */ yearRangeSlider = document.getElementById('year-range-slider');
+  const /** !Element */ yearRangeValue = document.getElementById('year-range-value');
+  yearRangeSlider.value = year;
+  yearRangeValue.innerText = year;
+
+  yearRangeSlider.oninput = () => {
+    const year = parseInt(yearRangeSlider.value);
+    yearRangeValue.innerText = year;
+    app.setYear(year);
+    Util.updatePageUrl({year: year});
+  }
+
   app.initialize();
 });
