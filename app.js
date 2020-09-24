@@ -284,7 +284,7 @@ class App {
     this.requestRender();
   }
 
-  initializeCamera(initial_gaze_point) {
+  initializeCamera() {
     this.camera = new THREE.PerspectiveCamera(
         Settings.fieldOfView,
         /* aspectRatio= */ this.container.offsetWidth/this.container.offsetHeight,
@@ -510,7 +510,7 @@ class App {
     this.initializeLights();
 
     // camera
-    this.initializeCamera(/* initial_gaze_point= */ this.scene.position);
+    this.initializeCamera();
 
     // action!
     this.requestRenderAfterEach(
