@@ -188,6 +188,7 @@ class App {
     this.cameraY = Settings.eyeHeight[this.level];
     this.cameraXAngle = Settings.initialPitch[level];
     this.updateCamera();
+    Util.updatePageUrl({level: level});
     this.requestRender();
   }
 

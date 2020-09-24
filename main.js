@@ -214,6 +214,7 @@ const params = (new URL(document.location)).searchParams;
 
 const year = params.has("year") ? parseInt(params.get("year")) : Settings.year;
 Util.updatePageUrl({year: year});
+const level = params.has("level") ? parseInt(params.get("level")) : Settings.level;
 
 const options = {};
 
@@ -246,20 +247,25 @@ window.addEventListener('load', () => {
   const /** !Element */ streetLevelButton = document.getElementById('street-level-button');
   const /** !Element */ birdLevelButton = document.getElementById('bird-level-button');
 
-  let currentEyeLevel = 'street';
-
-  function handleEyeLevelButtonClick(e) {
-    const eyeLevel = this.id == 'street-level-button' ? 'street' : 'bird';
-    if (eyeLevel == currentEyeLevel) { return; }
-    if (eyeLevel == 'street') {
+  function updateEyeLevelButtonStates(level) {
+    if (level == 'street') {
       birdLevelButton.classList.remove('eyelevel-active');
       streetLevelButton.classList.add('eyelevel-active');
     } else {
       streetLevelButton.classList.remove('eyelevel-active');
       birdLevelButton.classList.add('eyelevel-active');
     }
-    app.setLevel(eyeLevel);
-    currentEyeLevel = eyeLevel;
+  }
+
+  let currentLevel = level;
+  updateEyeLevelButtonStates(level);
+
+  function handleEyeLevelButtonClick(e) {
+    const newLevel = this.id == 'street-level-button' ? 'street' : 'bird';
+    if (newLevel == currentLevel) { return; }
+    updateEyeLevelButtonStates(newLevel);
+    app.setLevel(newLevel);
+    currentLevel = newLevel;
   }
   birdLevelButton.onclick = handleEyeLevelButtonClick;
   streetLevelButton.onclick = handleEyeLevelButtonClick;
