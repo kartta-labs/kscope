@@ -2,7 +2,6 @@ import {Axes} from "./axes.js";
 import {Rect} from "./rect.js";
 import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
-import {GeoPoint, GeoConverter} from "./geospatial_utils.js";
 import {MovingCenterFrame} from "./moving_center_frame.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
@@ -24,15 +23,10 @@ class App {
     this.speed = ('speed' in options) ? options['speed'] : 1.0;
     this.debug = ('debug' in options) ? options['debug'] : false;
 
-
-
     this.renderRequested = false;
     this.container = container;
     this.camera = null;
     this.scene = new THREE.Scene();
-    this.sceneOrigin = new GeoPoint(
-      Settings.origin.latitudeInMicroDegrees,
-      Settings.origin.longitudeInMicroDegrees);
     this.sceneOriginDegrees = new THREE.Vector2(Settings.origin.longitudeInMicroDegrees / 1.0e6,
                                                 Settings.origin.latitudeInMicroDegrees / 1.0e6);
     this.coords = new Coords(this.sceneOriginDegrees);
@@ -407,7 +401,7 @@ class App {
     try{
       options = options || {};
       const shape =
-        GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
+        Util.featureToSceneCoordsShape(feature, this.coords);
 
       const MINIMUM_EXTRUSION_METERS = 0.01;
 
