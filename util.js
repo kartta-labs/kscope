@@ -37,4 +37,16 @@ Util.updatePageUrl = (params) => {
       location.origin + location.pathname + '?' + url.searchParams.toString());
 };
 
+Util.stringToBoolean = (s) => {
+  s = s.toLowerCase();
+  return s == "yes" || s == "true" || s == "1";
+};
+
+Util.setOptionFromUrlParams = (options, params, name, parse) => {
+  if (params.has(name)) {
+    options[name] = parse(params.get(name));
+  }
+};
+
+
 export {Util};

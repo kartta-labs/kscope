@@ -64,9 +64,9 @@ const nonShadowLights = {
 };
 
 let Settings = {
-  'eyeHeightInMeters': 1.7,
+  'eyeHeightInMeters': 1.7, // ?? unused ??
   'endpoint': Config.endpoint,
-  'bbox': '-74.005412,40.7412755,-73.997376,40.743333',
+  'bbox': '-74.005412,40.7412755,-73.997376,40.743333', // ?? unused ??
   //'fullUrl': './kartta.json',
   'origin': {
     'latitudeInMicroDegrees': 40741057,
@@ -74,15 +74,10 @@ let Settings = {
     'altitudeInMeters': 0
   },
 
-  'brightnessOfModels': 0.4,
-  'brightnessOfExtrudedModels': 0.6,
-  'colorVariationOfExtrudedModels': 0.1,
-
-  'year': 1940,
   'fieldOfView': 45.0,
   'nearPlane': 1.0,
   'farPlane': 5000,
-  'tileWidthInMercator': 0.00002,
+  'tileWidthInMercator': 0.00002, // ?? unused ??
 //  'shadows': true,
 //  'lights': shadowLights,
   'shadows': false,
@@ -93,8 +88,29 @@ let Settings = {
 
   'averageStoreyHeightMeters': 4.3,
   'minimumExtrusionMeters': 0.01,
+  'brightnessOfModels': 0.4,
   'brightnessOfExtrudedModels': 0.6,
-  'colorVariationOfExtrudedModels': 0.1
+  'colorVariationOfExtrudedModels': 0.1,
+
+  'year': 1940,
+  'tilesize' : 1000,
+  'fetchradius' : 2,
+  'dropradius' : 5,
+  'speed' : 1.0,
+  'debug' : false,
+  'pitch': 0,
+  'yaw': 0,
+
+  // eyeheight,eyex,eyez give the initial default position of the eye
+  // (camera) in scene coordinates, relative to the scene origin
+  // above.  If no lon/lat option is passed to the app, the camera's
+  // initial lon/lat will be initialized to be eyex meters east and
+  // eyez meters south of the scene origin.  The camera height is
+  // given by eyeheight, which can be overridden by an option.
+  'eyeheight' : 1.7,
+  'eyex': 0,
+  'eyez': 200
+
 };
 
 export {Settings};

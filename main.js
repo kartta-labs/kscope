@@ -208,66 +208,39 @@
 
 import {App} from "./app.js";
 import {Util} from "./util.js";
+import {Settings} from "./settings.js";
 
+const params = (new URL(document.location)).searchParams;
 
-let params = (new URL(document.location)).searchParams;
+const year = params.has("year") ? parseInt(params.get("year")) : Settings.year;
+Util.updatePageUrl({year: year});
 
+const options = {};
 
-const year = params.has("year") ? parseInt(params.get("year")) : 1940;
-const tilesize = params.has("tilesize") ? parseInt(params.get("tilesize")) : 1000;
-const fetchradius = params.has("fetchradius") ? parseInt(params.get("fetchradius")) : 2;
-const dropradius = params.has("dropradius") ? parseInt(params.get("dropradius")) : 5;
-const eyeheight = params.has("eyeheight") ? parseFloat(params.get("eyeheight")) : 1.7;
-const speed = params.has("speed") ? parseFloat(params.get("speed")) : 1.0;
-const debug = params.has("debug") ? params.get("debug") : "no";
-
-const url = location.origin + location.pathname
-          + '?year='+year
-          + '&tilesize='+tilesize
-          + '&fetchradius='+fetchradius
-          + '&dropradius='+dropradius
-          + '&eyeheight='+eyeheight
-          + '&speed='+speed
-          + '&debug='+debug
-          ;
-window.history.replaceState(null, '', url);
-
-function stringToBoolean(s) {
-  s = s.toLowerCase();
-  return s == "yes" || s == "true" || s == 1;
-}
-
-
-const options = {
-  year: year,
-  tilesize: tilesize,
-  fetchradius: fetchradius,
-  dropradius: dropradius,
-  eyeheight: eyeheight,
-  speed: speed,
-  debug: stringToBoolean(debug)
-};
-
-if (params.has("lon")) { options['lon'] = parseFloat(params.get("lon")); }
-if (params.has("lat")) { options['lat'] = parseFloat(params.get("lat")); }
-if (params.has("pitch")) { options['pitch'] = parseFloat(params.get("pitch")); }
-if (params.has("yaw")) { options['yaw'] = parseFloat(params.get("yaw")); }
+Util.setOptionFromUrlParams(options, params, "year", parseInt);
+Util.setOptionFromUrlParams(options, params, "tilesize", parseInt);
+Util.setOptionFromUrlParams(options, params, "fetchradius", parseInt);
+Util.setOptionFromUrlParams(options, params, "dropradius", parseInt);
+Util.setOptionFromUrlParams(options, params, "eyeheight", parseFloat);
+Util.setOptionFromUrlParams(options, params, "speed", parseFloat);
+Util.setOptionFromUrlParams(options, params, "debug", Util.stringToBoolean);
+Util.setOptionFromUrlParams(options, params, "lon", parseFloat);
+Util.setOptionFromUrlParams(options, params, "lat", parseFloat);
+Util.setOptionFromUrlParams(options, params, "pitch", parseFloat);
+Util.setOptionFromUrlParams(options, params, "yaw", parseFloat);
 
 const app = new App(document.getElementById('viewport'), options);
 
 window.addEventListener('load', () => {
-
   const /** !Element */ yearRangeSlider = document.getElementById('year-range-slider');
   const /** !Element */ yearRangeValue = document.getElementById('year-range-value');
   yearRangeSlider.value = year;
   yearRangeValue.innerText = year;
-
   yearRangeSlider.oninput = () => {
     const year = parseInt(yearRangeSlider.value);
     yearRangeValue.innerText = year;
     app.setYear(year);
     Util.updatePageUrl({year: year});
   }
-
   app.initialize();
 });

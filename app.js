@@ -13,13 +13,15 @@ class App {
   /**
    */
   constructor(container, options) {
-    this.fetchradius = ('fetchradius' in options) ? options['fetchradius'] : 2;
-    this.dropradius = ('dropradius' in options) ? options['dropradius'] : 5;
-    this.tilesize = ('tilesize' in options) ? options['tilesize'] : 1000;
-    this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : 1.7;
-    this.speed = ('speed' in options) ? options['speed'] : 1.0;
-    this.debug = ('debug' in options) ? options['debug'] : false;
-    this.year = ('year' in options) ? options['year'] : 1940;
+    this.fetchradius = ('fetchradius' in options) ? options['fetchradius'] : Settings.fetchradius;
+    this.dropradius = ('dropradius' in options) ? options['dropradius'] : Settings.dropradius;
+    this.tilesize = ('tilesize' in options) ? options['tilesize'] : Settings.tilesize;
+    this.eyeheight = ('eyeheight' in options) ? options['eyeheight'] : Settings.eyeheight;
+    this.speed = ('speed' in options) ? options['speed'] : Settings.speed;
+    this.debug = ('debug' in options) ? options['debug'] : Settings.debug;
+    this.year = ('year' in options) ? options['year'] : Settings.year;
+    const defaultCameraSceneX = ('eyex' in options) ? options['eyex'] : Settings.eyex;
+    const defaultCameraSceneZ = ('eyez' in options) ? options['eyez'] : Settings.eyez;
 
     this.renderRequested = false;
     this.container = container;
@@ -30,7 +32,7 @@ class App {
     this.coords = new Coords(this.sceneOriginDegrees);
     this.extruder = new Extruder(this.coords);
 
-    const defaultCameraSceneCoords = new THREE.Vector2(0, 200);
+    const defaultCameraSceneCoords = new THREE.Vector2(defaultCameraSceneX, defaultCameraSceneZ);
     const defaultCameraLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(defaultCameraSceneCoords);
 
     this.initialCameraXAngle = ('pitch' in options) ? options['pitch'] : 0;
@@ -287,17 +289,14 @@ class App {
     this.camera.matrix.multiply(new THREE.Matrix4().makeRotationY(this.cameraYAngle));
     this.camera.matrix.multiply(new THREE.Matrix4().makeRotationX(this.cameraXAngle));
 
-    const url = new URL(document.location);
-    const params = url.searchParams;
     const cameraSceneCoords = new THREE.Vector2(this.cameraX, this.cameraZ);
     const cameraLonLatDegrees = this.coords.sceneCoordsToLatLonDegrees(cameraSceneCoords);
-    params.set("lon", cameraLonLatDegrees.x);
-    params.set("lat", cameraLonLatDegrees.y);
-    params.set("pitch", this.cameraXAngle);
-    params.set("yaw", this.cameraYAngle);
-
-    window.history.replaceState(null, '',
-                                location.origin + location.pathname + '?' + params.toString());
+    Util.updatePageUrl({
+      lon: cameraLonLatDegrees.x,
+      lat: cameraLonLatDegrees.y,
+      pitch: this.cameraXAngle,
+      yaw: this.cameraYAngle
+    });
 
     this.camera.matrixAutoUpdate = false;
     this.camera.matrixWorldNeedsUpdate = true;
