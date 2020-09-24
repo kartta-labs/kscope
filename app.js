@@ -70,8 +70,6 @@ class App {
     this.center.position.set(0,0,0);
     this.scene.add(this.center);
 
-    //this.raycaster = new THREE.Raycaster();
-
     this.movingCenterFrame = new MovingCenterFrame();
 
     this.eventMode = 'look';
@@ -83,8 +81,6 @@ class App {
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
     }).setMouseDragListener((p, dp, button) => {
-      //console.log('mouseDrag: dp = ', dp);
-
       let M;
 
       if (this.eventMode == 'orbit') {
@@ -294,29 +290,12 @@ class App {
         /* aspectRatio= */ this.container.offsetWidth/this.container.offsetHeight,
         Settings.nearPlane, Settings.farPlane);
 
-    // Sets the camera height to human height (2m) looking to the center of the
-    // scene from 10m away.
-
     this.cameraXAngle = this.initialCameraXAngle;
     this.cameraYAngle = this.initialCameraYAngle;
     this.cameraX = this.initialCameraX;
     this.cameraY = this.initialCameraY;
     this.cameraZ = this.initialCameraZ;
     this.updateCamera();
-
-
-//    this.camera.position.set(0,  this.eyeheight /*Settings.eyeHeightInMeters*/, 200);
-//    this.camera.position.set(0,  50, 200);
-
-//    this.camera.up.set(0, 1, 0);
-//    this.camera.rotateY(0.1);
-    // IMPORTANT: camera.lookAt only works if camera.matrixAutoUpdate is true so it must
-    //    be called BEFORE setting camera.matrixAutoUpdate to false below!!!
-//    this.camera.lookAt(0, 0, 0);
-
-//    this.camera.matrixAutoUpdate = false;
-//    this.camera.updateMatrix();
-//    this.camera.matrixWorldNeedsUpdate = true;
 
     this.scene.add(this.camera);
 
@@ -428,52 +407,6 @@ class App {
     }
     return null;
   }
-
-//  /**
-//   * Puts a feature (building) on the scene.
-//   * @param {string} feature A polygon geographic feature of a footprint.
-//   * @param {number} numberOfLevels
-//   */
-//  loadFeature(feature, numberOfLevels, tileObject, options) {
-//    try{
-//      options = options || {};
-//      const shape =
-//        GeoConverter.geoPointArrayToShape(GeoConverter.wayToGeoPointArray(feature.geometry.coordinates[0]), this.sceneOrigin);
-//
-//      const MINIMUM_EXTRUSION_METERS = 0.01;
-//
-//      const extrudeSettings = {
-//        depth: numberOfLevels > 0 ? -numberOfLevels * this.AVERAGE_STOREY_HEIGHT_METERS :
-//                                    -MINIMUM_EXTRUSION_METERS,
-//        bevelEnabled: false
-//      };
-//      if (feature.properties['height']) {
-//        extrudeSettings.depth = -parseFloat(feature.properties['height']);
-//      }
-//      if (options.extrudeDepth) {
-//        extrudeSettings.depth = options.extrudeDepth;
-//      }
-//      const mesh = this.shapeToMesh(shape, extrudeSettings, options);
-//      // NOTE: id of this feature  is feature.properties.id; use that later to track this object
-//      mesh.name = feature.properties.id;
-//      // TODO: set visibility based on current year and the values of
-//      //   feature.properties.start_date and feature.properties.end_date
-//      mesh.visible = true;
-//      tileObject.add(mesh);
-//      //this.scene.add(mesh);
-//      //xx if (!this.idToMesh[feature.properties.id]) {
-//      //xx   mesh.name = feature.properties.id;
-//      //xx   this.idToMesh[mesh.name] = mesh;
-//      //xx   RenderView.setVisibility(
-//      //xx     RenderView.extractYearFromDate(feature.properties.start_date),
-//      //xx     RenderView.extractYearFromDate(feature.properties.end_date), mesh
-//      //xx   );
-//      //xx   this.scene.add(mesh);
-//      //xx }
-//    } catch (e) {
-//      console.log('Error while loading feature '+ feature.id + ': ' +e);
-//    }
-//  }
 
   /**
    * Extrudes a shape to create a Mesh.
