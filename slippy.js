@@ -27,6 +27,7 @@ class Slippy {
       this.renderViews = {};
       this.settings = settings;
       this.currentTileCenter = Slippy.toGeoPoint(settings.origin);
+console.log('at AAA0');
       this.currentRenderView = this.createNewRenderView(this.currentTileCenter);
       this.currentBbox = this.createTileBbox(this.currentTileCenter);
     }
@@ -107,7 +108,7 @@ class Slippy {
   
     watch(positionInMeters, callback) {
       const geoPosition = Slippy.metersToGeoPoint(positionInMeters, {'x':0, 'y':0}, this.currentRenderView.sceneOrigin);
-      const bbox = this.createTileBbox(geoPosition)
+      const bbox = this.createTileBbox(geoPosition);
       if (bbox != this.currentBbox){
         this.setRenderViewIfReady(geoPosition);
         callback();
@@ -125,9 +126,14 @@ class Slippy {
       const url = settings.fullUrl
                 ? settings.fullUrl
                 : settings.endpoint + '?bbox=' + bbox;
+console.log(url);
       fetch(url)
-          .then(response => response.json())
-          .then(data => renderView.processFeatures(data))
+          .then(response => {
+             return response.json();
+          })
+          .then(data => {
+             renderView.processFeatures(data);
+          })
           .catch(e => console.log(e));
     }
   }
