@@ -258,7 +258,6 @@ window.addEventListener('load', () => {
   }
 
   let currentLevel = level;
-console.log('level initialized to ', level);
   updateEyeLevelButtonStates(level);
 
   function handleEyeLevelButtonClick(e) {

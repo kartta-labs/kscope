@@ -17,7 +17,6 @@ import {Rect} from "./rect.js";
 import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
 import {Extruder} from "./extruder.js";
-import {MovingCenterFrame} from "./moving_center_frame.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
 import {Util} from "./util.js";
@@ -91,10 +90,6 @@ class App {
     this.center.position.set(0,0,0);
     this.scene.add(this.center);
 
-    this.movingCenterFrame = new MovingCenterFrame();
-
-    this.eventMode = 'look';
-
     this.eventTracker.setMouseDownListener(e => {
       if (e.button == 2) {
         // noop
@@ -102,43 +97,12 @@ class App {
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
     }).setMouseDragListener((p, dp, button) => {
-      let M;
-
-      if (this.eventMode == 'orbit') {
-        const v = new THREE.Vector3(dp.y, dp.x, 0).normalize();
-        const d = Math.sqrt(dp.x*dp.x + dp.y*dp.y);
-        const angle = (d / this.container.offsetWidth) * Math.PI;
-        const L = new THREE.Matrix4().makeRotationAxis(v, angle);
-        M = this.movingCenterFrame.computeTransform(
-            /* moving= */ this.camera,
-            /* center= */ this.center,
-            /* frame= */ this.camera,
-            L);
-      } else if (this.eventMode == 'freelook') {
-        const v = new THREE.Vector3(dp.y, dp.x, 0).normalize();
-        const d = Math.sqrt(dp.x*dp.x + dp.y*dp.y);
-        const angle = (d / this.container.offsetWidth) * Math.PI;
-        const L = new THREE.Matrix4().makeRotationAxis(v, angle);
-        M = this.movingCenterFrame.computeTransform(
-            /* moving= */ this.camera,
-            /* center= */ this.camera,
-            /* frame= */ this.camera,
-            L);
-      } else if (this.eventMode == 'look') {
-
         const xangle = (dp.y / this.container.offsetWidth) * Math.PI;
         const yangle = (dp.x / this.container.offsetWidth) * Math.PI;
 
         this.cameraXAngle += xangle;
         this.cameraYAngle += yangle;
         this.updateCamera();
-        return;
-      }
-
-      this.camera.matrix.multiplyMatrices(this.camera.matrix, M);
-      this.camera.matrixWorldNeedsUpdate = true;
-      this.refreshDataForNewCameraPosition();
-      this.requestRender();
     }).setMouseWheelListener(e => {
       //console.log('mouseWheel: e = ', e);
     }).setKeyPressListener(e => {
@@ -152,19 +116,7 @@ class App {
         this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
       }
     }).setKeyUpListener(e => {
-      if (e.key == 'l') {
-        this.eventMode = 'look';
-      } else if (e.key == 'o') {
-        this.eventMode = 'orbit';
-      } else if (e.key == 'g') {
-        if (this.controls) {
-          this.camera.matrixWorld.decompose(this.camera.position,
-                                            this.camera.quaternion,
-                                            this.camera.scale);
-          this.camera.matrixAutoUpdate = true;
-          this.controls.lock();
-        }
-      }
+      // noop
     });
     this.eventTracker.start();
   }
