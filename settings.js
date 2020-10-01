@@ -16,6 +16,7 @@ import {Config} from "./config.js";
 
 let Settings = {
   'endpoint': Config.endpoint,
+  'reservoir_url': Config.reservoir_url,
   'origin': {
     'latitudeInMicroDegrees': 40741057,
     'longitudeInMicroDegrees': -74001565,
