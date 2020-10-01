@@ -233,16 +233,18 @@ Util.setOptionFromUrlParams(options, params, "yaw", parseFloat);
 const app = new App(document.getElementById('viewport'), options);
 
 window.addEventListener('load', () => {
-  const /** !Element */ yearRangeSlider = document.getElementById('year-range-slider');
-  const /** !Element */ yearRangeValue = document.getElementById('year-range-value');
-  yearRangeSlider.value = year;
-  yearRangeValue.innerText = year;
-  yearRangeSlider.oninput = () => {
-    const year = parseInt(yearRangeSlider.value);
-    yearRangeValue.innerText = year;
-    app.setYear(year);
-    Util.updatePageUrl({year: year});
-  }
+
+  createKarttaSlider({
+    minValue: 1800,
+    maxValue: 2000,
+    stepSize: 1,
+    value: year,
+    change: (year) => {
+      app.setYear(year);
+      Util.updatePageUrl({year: year});
+    },
+    domElementToReplace: document.getElementById('year-slider-placeholder')
+  });
 
   const /** !Element */ streetLevelButton = document.getElementById('street-level-button');
   const /** !Element */ birdLevelButton = document.getElementById('bird-level-button');

@@ -36,6 +36,10 @@ header {
   flex-flow: row;
 }
 
+.kartta-header-content {
+  flex: 1 0 auto;
+}
+
 .logo-container {
   padding-top: 8px;
   width: 150px;
