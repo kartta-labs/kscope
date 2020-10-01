@@ -185,6 +185,64 @@ class App {
     return this.tiler.tileIndexAtLonLatDegrees(cameraGroundPosLonLatDegrees);
   }
 
+
+  loadObjFromZipUrl(url) {
+    return new Promise((resolve,reject) => {
+      fetch(url)
+      .then(function (response) {
+        if (response.status === 200 || response.status === 0) {
+          return Promise.resolve(response.blob());
+        } else {
+          return Promise.reject(new Error(response.statusText));
+        }
+      })
+      .then(JSZip.loadAsync)
+      .then(function (zip) {
+        let mtl, obj;
+        zip.forEach( (path,file) => {
+          if (path.endsWith(".mtl")) {
+            mtl = {
+              promise: file.async("text"),
+              path: path
+            };
+          } else if (path.endsWith(".obj")) {
+            obj = {
+              promise: file.async("text"),
+              path: path
+            };
+          }
+        });
+        if (!mtl) {
+          throw new Error("No mtl file found in zip file received from url="+url);
+        }
+        if (!obj) {
+          throw new Error("No obj file found in zip file received from url="+url);
+        }
+        mtl.promise.then(content => {
+          const mtlLoader = new THREE.MTLLoader();
+          mtlLoader.setMaterialOptions({side: THREE.DoubleSide});
+          const mtlCreator = mtlLoader.parse(content, mtl.path);
+          obj.promise.then(content => {
+            const objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(mtlCreator);
+            const object3D = objLoader.parse(content);
+            resolve(object3D);
+          }, (error) => {
+            reject(new Error("Error reading obj file in zip file received from url="+url));
+          });
+        }, (error) => {
+          reject(new Error("Error reading mtl file in zip file received from url="+url));
+        });
+      })
+      .then(function success(text) {
+        //console.log('success! text=', text);
+      }, function error(e) {
+        //reject(new Error('yo got error; e=', e));
+      });
+    });
+  }
+
+
   refreshDataForNewCameraPosition() {
     const cameraTileIndex = this.tileIndexUnderCamera();
 
@@ -371,7 +429,6 @@ class App {
     const features = response.data;
 
     for (let i = 0; i < features.length; i++) {
-
       if (features[i].properties.id in this.featureIdToObjectDetails) {
         // object has already been loaded from another tile, so skip it
         continue;
@@ -416,7 +473,7 @@ class App {
           colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
       } else {
-        console.log('feature is not supported for rendering.');
+        //console.log('feature is not supported for rendering.');
       }
       if (extrusion != null) {
         this.featureIdToObjectDetails[features[i].properties.id] = {
@@ -427,8 +484,27 @@ class App {
         extrusion.visible = App.featureVisibleInYear(features[i], this.year);
         tileDetails.object3D.add(extrusion);
         tileDetails.featureIds.push(features[i].properties.id);
+        this.fetch3DModelAndReplaceExtrusionIfFound(features[i], tileDetails);
       }
     }
+  }
+
+  fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails) {
+    const baseArray = feature.geometry.coordinates[0][0];
+    const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
+    //console.log('baseSceneCoords=',baseSceneCoords);
+    const url = Settings.reservoir_url + '/api/v1/download/building_id/' + feature.properties.id + '/';
+    this.loadObjFromZipUrl(url).then((object3D) => {
+      object3D.position.x = baseSceneCoords.x;
+      object3D.position.y = 0;
+      object3D.position.z = baseSceneCoords.y;
+      //console.log('YO!!   got object3D=',object3D);
+      tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
+      object3D.visible = App.featureVisibleInYear(feature, this.year);
+      tileDetails.object3D.add(object3D);
+      this.featureIdToObjectDetails[feature.properties.id].object3D = object3D;
+      this.requestRender();
+    });
   }
 
   // Request a single render pass in the next animation frame, unless one has already
@@ -467,7 +543,6 @@ class App {
         this.initializeGround(),
         this.initializeSky());
     this.refreshDataForNewCameraPosition();
-
   }
 }
 
