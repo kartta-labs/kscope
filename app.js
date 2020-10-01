@@ -237,7 +237,7 @@ class App {
       .then(function success(text) {
         //console.log('success! text=', text);
       }, function error(e) {
-        //reject(new Error('yo got error; e=', e));
+        //reject(new Error('got error; e=', e));
       });
     });
   }
@@ -492,13 +492,11 @@ class App {
   fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails) {
     const baseArray = feature.geometry.coordinates[0][0];
     const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
-    //console.log('baseSceneCoords=',baseSceneCoords);
     const url = Settings.reservoir_url + '/api/v1/download/building_id/' + feature.properties.id + '/';
     this.loadObjFromZipUrl(url).then((object3D) => {
       object3D.position.x = baseSceneCoords.x;
       object3D.position.y = 0;
       object3D.position.z = baseSceneCoords.y;
-      //console.log('YO!!   got object3D=',object3D);
       tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
       object3D.visible = App.featureVisibleInYear(feature, this.year);
       tileDetails.object3D.add(object3D);
