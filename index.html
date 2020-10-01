@@ -6,35 +6,29 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="icon" type="image/png" href="/assets/favicon-32x32.png" sizes="32x32">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" media="screen" href="kartta-slider.css">
+    <script src="kartta-slider.js"></script>
     <link rel="stylesheet" media="screen" href="/assets/kartta-app.css">
     <script src="/assets/kartta-app.js"></script>
-    <script src="settings.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/three.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/loaders/MTLLoader.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/loaders/OBJLoader.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/shaders/FilmShader.js  "></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/shaders/VignetteShader.js  "></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/shaders/SepiaShader.js  "></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/shaders/GammaCorrectionShader.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/postprocessing/FilmPass.js"></script>
     <script src="https://www.gstatic.com/external_hosted/threejs-r108/examples/js/utils/SceneUtils.js"></script>
-    <script type="module" src="geospatial_utils.js"></script>
     <script type="module" src="main.js"></script>
     <!--# include file="/assets/analytics.html" -->
   </head>
   <body>
     <header>
       <div class="logo-container"><div id="kartta-app-menu" ></div></div>
-      <div class="year-container">Year: <span id="year-range-value"></span></div>
-      <div class="slider-container"><input type="range" min="1900" max="1960" value="1950" class="slider" id="year-range-slider"></div>
-      <div class="debug-container"><span id="highlighted-object-name"></span></div>
+      <div class="kartta-header-content">
+        <div id="year-slider-placeholder"></div>
+      </div>
     </header>
-    <div id="viewport"></div>
+    <div id="viewport">
+      <div class="eyelevel-button eyelevel-active street-level" id="street-level-button"><img src="images/emoji_u1f697.png"></div>
+      <div class="eyelevel-button bird-level" id="bird-level-button"><img src="images/emoji_u1f681.png"></div>
+    </div>
     <div class="kartta-footer-overlay">
       <div class="kartta-footer-overlay-container">
         <div class="kartta-footer-background">
