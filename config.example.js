@@ -14,5 +14,6 @@
 
 const Config = {
   'endpoint': 'URL to a host that returns GeoJSON for a given ?bbox=',
+  'reservoir_url': 'URL of reservoir server for 3d building models'
 };
 export {Config};
