@@ -29,19 +29,33 @@ let Settings = {
   'shadows': false,
   'lights': {
     'Ambient': [
-      {'color': 0xcccccc, 'intensity': 0.2}
+      {'color': 0xcccccc, 'intensity': 0.3}
     ],
     'directional': [
       {
-        'position': {'x': -1, 'y': -0.5, 'z': -1},
+        'position': {'x': 500, 'y': 500, 'z': 200},
         'color': 0xffffff,
-        'intensity': 0.6
+        'intensity': 0.4
       },
+      {
+        'position': {'x': -200, 'y': 500, 'z': 500},
+        'color': 0xffffff,
+        'intensity': 0.4
+      },
+/*
+      {
+        'position': {'x': 0, 'y': 500, 'z': 0},
+        'color': 0xffffff,
+        'intensity': 0.2
+      }
+*/
+/*
       {
         'position': {'x': -1, 'y': -0.5, 'z': 1},
         'color': 0xffffff,
         'intensity': 0.6
       }
+*/
     ]
   },
 
