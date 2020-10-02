@@ -14,6 +14,7 @@
 
 import {Axes} from "./axes.js";
 import {Rect} from "./rect.js";
+import {Colors} from "./colors.js";
 import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
 import {Extruder} from "./extruder.js";
@@ -22,6 +23,15 @@ import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
 import {Util} from "./util.js";
 import {Tile, Tiler} from "./tiles.js";
+
+
+window.yodoit = (c,msg) => {
+  if (msg) {
+    console.log(msg+' keys(c materials)=',Object.keys(c.materials));
+  } else {
+    console.log('keys(c materials)=',Object.keys(c.materials));
+  }
+};
 
 class App {
   /**
@@ -188,8 +198,55 @@ class App {
     return this.tiler.tileIndexAtLonLatDegrees(cameraGroundPosLonLatDegrees);
   }
 
+  // Reset the colors in a MaterialCreator according to palette of brick/stone/concrete colors
+  recolorMaterials(mtlCreator, featureId) {
+    const blackColor = [0,0,0];
+    const brickColor = Colors.chooseRandom("brick", featureId);
+    const concreteColor = Colors.chooseRandom("concrete", featureId);
 
-  loadObjFromZipUrl(url) {
+    const stoneColor = Colors.chooseRandom("stone", featureId);
+
+    const buildingColor = Colors.chooseRandom("brickcrete", featureId);
+    const windowTreatmentColor = Colors.chooseRandom("concrete", featureId + "windowTreatment");
+    const roofCorniceColor = Colors.chooseRandom("concrete", featureId + "roofCornice");
+    const stairColor = Colors.chooseRandom("stone", featureId);
+    const doorColor = blackColor;
+    const storeFrontColor = Colors.chooseRandom("concrete", featureId + "storeFront");
+
+    Object.keys(mtlCreator.materialsInfo).forEach(mtlName => {
+      if (mtlName.startsWith("front") || mtlName.startsWith("default")) {
+        mtlCreator.materialsInfo[mtlName].ka = buildingColor;
+        mtlCreator.materialsInfo[mtlName].kd = buildingColor;
+      } else if (mtlName.startsWith("cornice")) {
+        mtlCreator.materialsInfo[mtlName].ka = windowTreatmentColor;
+        mtlCreator.materialsInfo[mtlName].kd = windowTreatmentColor;
+        mtlCreator.materialsInfo[mtlName].ks = blackColor;
+      } else if (mtlName.startsWith("sill")) {
+        mtlCreator.materialsInfo[mtlName].ka = windowTreatmentColor;
+        mtlCreator.materialsInfo[mtlName].kd = windowTreatmentColor;
+        mtlCreator.materialsInfo[mtlName].ks = blackColor;
+      } else if (mtlName.startsWith("roofcornice")) {
+        mtlCreator.materialsInfo[mtlName].ka = roofCorniceColor;
+        mtlCreator.materialsInfo[mtlName].kd = roofCorniceColor;
+        mtlCreator.materialsInfo[mtlName].ks = roofCorniceColor;
+      } else if (mtlName.startsWith("stair")) {
+        mtlCreator.materialsInfo[mtlName].ka = stairColor;
+        mtlCreator.materialsInfo[mtlName].kd = stairColor;
+      } else if (mtlName.startsWith("doorcasing")) {
+        mtlCreator.materialsInfo[mtlName].ka = buildingColor;
+        mtlCreator.materialsInfo[mtlName].kd = buildingColor;
+      } else if (mtlName.startsWith("door")) {
+        mtlCreator.materialsInfo[mtlName].ka = doorColor;
+        mtlCreator.materialsInfo[mtlName].kd = doorColor;
+      } else if (mtlName.startsWith("storefront")) {
+        mtlCreator.materialsInfo[mtlName].ka = storeFrontColor;
+        mtlCreator.materialsInfo[mtlName].kd = storeFrontColor;
+      }
+    });
+  }
+
+
+  loadObjFromZipUrl(url, featureId) {
     return new Promise((resolve,reject) => {
       this.fetchQueue.fetch(url)
       .then(function (response) {
@@ -200,7 +257,7 @@ class App {
         }
       })
       .then(JSZip.loadAsync)
-      .then(function (zip) {
+      .then(zip => {
         let mtl, obj;
         zip.forEach( (path,file) => {
           if (path.endsWith(".mtl")) {
@@ -225,6 +282,7 @@ class App {
           const mtlLoader = new THREE.MTLLoader();
           mtlLoader.setMaterialOptions({side: THREE.DoubleSide});
           const mtlCreator = mtlLoader.parse(content, mtl.path);
+          this.recolorMaterial(mtlCreator, featureId);
           obj.promise.then(content => {
             const objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(mtlCreator);
@@ -346,8 +404,11 @@ class App {
       this.skybox.position.z = this.cameraZ;
     }
     if (this.ground) {
-      this.ground.position.x = this.cameraX;
-      this.ground.position.z = this.cameraZ;
+      if (Math.abs(this.ground.position.x - this.cameraX) > 500
+          || Math.abs(this.ground.position.z - this.cameraZ) > 500) {
+        this.ground.position.x = this.cameraX;
+        this.ground.position.z = this.cameraZ;
+      }
     }
     this.requestRender();
   }
@@ -386,6 +447,7 @@ class App {
             asphalt.wrapT = THREE.RepeatWrapping;
             const planeMaterial = new THREE.MeshStandardMaterial({
               map: asphalt,
+              color: new THREE.Color(.2,.2,.2),
               side: THREE.DoubleSide
             });
             const planeGeometry = new THREE.PlaneGeometry(Settings.farPlane, Settings.farPlane);
@@ -487,16 +549,16 @@ class App {
         extrusion.visible = App.featureVisibleInYear(features[i], this.year);
         tileDetails.object3D.add(extrusion);
         tileDetails.featureIds.push(features[i].properties.id);
-        this.fetch3DModelAndReplaceExtrusionIfFound(features[i], tileDetails);
+        this.fetch3DModelAndReplaceExtrusionIfFound(features[i], tileDetails, i);
       }
     }
   }
 
-  fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails) {
+  fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails, i) {
     const baseArray = feature.geometry.coordinates[0][0];
     const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
     const url = Settings.reservoir_url + '/api/v1/download/building_id/' + feature.properties.id + '/';
-    this.loadObjFromZipUrl(url).then((object3D) => {
+    this.loadObjFromZipUrl(url, feature.properties.id).then((object3D) => {
       object3D.position.x = baseSceneCoords.x;
       object3D.position.y = 0;
       object3D.position.z = baseSceneCoords.y;
