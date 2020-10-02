@@ -17,6 +17,7 @@ import {Rect} from "./rect.js";
 import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
 import {Extruder} from "./extruder.js";
+import {FetchQueue} from "./fetch_queue.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
 import {Util} from "./util.js";
@@ -35,6 +36,8 @@ class App {
     this.year = ('year' in options) ? options['year'] : Settings.year;
     const defaultCameraSceneX = ('eyex' in options) ? options['eyex'] : Settings.eyex;
     const defaultCameraSceneZ = ('eyez' in options) ? options['eyez'] : Settings.eyez;
+
+    this.fetchQueue = new FetchQueue(400);
 
     this.renderRequested = false;
     this.container = container;
@@ -188,7 +191,7 @@ class App {
 
   loadObjFromZipUrl(url) {
     return new Promise((resolve,reject) => {
-      fetch(url)
+      this.fetchQueue.fetch(url)
       .then(function (response) {
         if (response.status === 200 || response.status === 0) {
           return Promise.resolve(response.blob());
@@ -411,7 +414,7 @@ class App {
 
   initializeBuildings(tile, tileDetails, doneFunc) {
       const url = Settings.endpoint + '?bbox=' + tile.getBBoxString();
-      return fetch(url)
+      return this.fetchQueue.fetch(url)
           .then(response => {
              return response.json();
           })
