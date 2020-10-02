@@ -282,7 +282,7 @@ class App {
           const mtlLoader = new THREE.MTLLoader();
           mtlLoader.setMaterialOptions({side: THREE.DoubleSide});
           const mtlCreator = mtlLoader.parse(content, mtl.path);
-          this.recolorMaterial(mtlCreator, featureId);
+          this.recolorMaterials(mtlCreator, featureId);
           obj.promise.then(content => {
             const objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(mtlCreator);
