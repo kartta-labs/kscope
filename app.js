@@ -493,6 +493,8 @@ class App {
   processFeatures(response, tileDetails) {
     const features = response.data;
 
+    const featuresToRequest3DModelsFor = [];
+
     for (let i = 0; i < features.length; i++) {
       if (features[i].properties.id in this.featureIdToObjectDetails) {
         // object has already been loaded from another tile, so skip it
@@ -549,26 +551,152 @@ class App {
         extrusion.visible = App.featureVisibleInYear(features[i], this.year);
         tileDetails.object3D.add(extrusion);
         tileDetails.featureIds.push(features[i].properties.id);
-        this.fetch3DModelAndReplaceExtrusionIfFound(features[i], tileDetails, i);
+        featuresToRequest3DModelsFor.push(features[i]);
       }
     }
+    this.fetch3DModelsAndReplaceExtrusionsIfFound(featuresToRequest3DModelsFor,tileDetails);
   }
 
-  fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails, i) {
-    const baseArray = feature.geometry.coordinates[0][0];
-    const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
-    const url = Settings.reservoir_url + '/api/v1/download/building_id/' + feature.properties.id + '/';
-    this.loadObjFromZipUrl(url, feature.properties.id).then((object3D) => {
-      object3D.position.x = baseSceneCoords.x;
-      object3D.position.y = 0;
-      object3D.position.z = baseSceneCoords.y;
-      tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
-      object3D.visible = App.featureVisibleInYear(feature, this.year);
-      tileDetails.object3D.add(object3D);
-      this.featureIdToObjectDetails[feature.properties.id].object3D = object3D;
-      this.requestRender();
+  processTileZip(features, tileDetails, zip) {
+    const buildingIdToFeature = {};
+    features.forEach(feature => {
+      buildingIdToFeature[feature.properties.id] = feature;
+    });
+
+
+    // buildingData keys will be building ids, values are objects with this structure:
+    //   {
+    //     mtl: {
+    //       promise: <promise which resolves to contents of the contained mtl file>
+    //       path: <name of the contained mtl file>
+    //     }
+    //     obj: {
+    //       promise: <promise which resolves to contents of the contained obj file>
+    //       path: <name of the contained obj file>
+    //     }
+    //   }
+    const buildingData = {};
+
+    // metadata will hold the contents of the "metadata.json" file in the outer zip file
+    const metadata = {};
+
+    // Create promises for reading all the objects in the outer zip file
+    const promises = [];
+    zip.forEach((path,file) => {
+      if (path.endsWith(".json")) {
+        promises.push(file.async("text").then(content => {
+          const parsedMetadata = JSON.parse(content);
+          Object.keys(parsedMetadata).forEach(buildingId => {
+            metadata[buildingId] = JSON.parse(parsedMetadata[buildingId]);
+          });
+        }));
+      } else if (path.endsWith(".zip")) {
+        // translate inner zip file name to building id
+        const buildingId = path.replace(/.zip$/, '').replace('_','/');
+        // read the inner zip file contents
+        promises.push(file.async("blob").then(JSZip.loadAsync).then(izip => {
+          buildingData[buildingId] = {};
+          izip.forEach((ipath,ifile) => {
+            if (ipath.endsWith(".mtl")) {
+              buildingData[buildingId].mtl = {
+                promise: ifile.async("text"),
+                path: path
+              };
+            } else if (ipath.endsWith(".obj")) {
+              buildingData[buildingId].obj = {
+                promise: ifile.async("text"),
+                path: path
+              };
+            }
+          });
+        }));
+      }
+    });
+
+    // One all the promises from the outer zip file have resolved, read the inner zip files
+    // to create the actual Object3Ds.
+    Promise.all(promises).then(() => {
+      Object.keys(buildingData).forEach(buildingId => {
+        const mtl = buildingData[buildingId].mtl;
+        const obj = buildingData[buildingId].obj;
+        mtl.promise.then(content => {
+          const mtlLoader = new THREE.MTLLoader();
+          mtlLoader.setMaterialOptions({side: THREE.DoubleSide});
+          const mtlCreator = mtlLoader.parse(content, mtl.path);
+          this.recolorMaterials(mtlCreator, buildingId);
+          obj.promise.then(content => {
+            const objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(mtlCreator);
+            const object3D = objLoader.parse(content);
+            this.replaceExtrusionWithObject3D(buildingIdToFeature[buildingId], object3D, tileDetails);
+          }, error => {
+            reject(new Error("Error reading obj file in " + obj.path));
+          });
+        }, error => {
+          reject(new Error("Error reading mtl file in " + mtl.path));
+
+        });
+      });
+    });
+
+  }
+
+  fetch3DModelsAndReplaceExtrusionsIfFound(features, tileDetails) {
+    const buildingIds = features.map(feature => feature.properties.id);
+    const url = Settings.reservoir_url + '/api/v1/download/batch/building_id/';
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        building_ids: buildingIds
+      })
+    })
+    .then(function (response) {
+      if (response.status === 200 || response.status === 0) {
+        return Promise.resolve(response.blob());
+      } else {
+        return Promise.reject(new Error(response.statusText));
+      }
+    })
+    .then(JSZip.loadAsync)
+    .then(zip => {
+      this.processTileZip(features, tileDetails, zip);
+    })
+    .catch(error => {
+      console.log('yo error! ', error);
     });
   }
+
+  replaceExtrusionWithObject3D(feature, object3D, tileDetails) {
+    const baseArray = feature.geometry.coordinates[0][0];
+    const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
+    object3D.position.x = baseSceneCoords.x;
+    object3D.position.y = 0;
+    object3D.position.z = baseSceneCoords.y;
+    tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
+    object3D.visible = App.featureVisibleInYear(feature, this.year);
+    tileDetails.object3D.add(object3D);
+    this.featureIdToObjectDetails[feature.properties.id].object3D = object3D;
+    this.requestRender();
+  }
+
+  //fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails, i) {
+  //  const baseArray = feature.geometry.coordinates[0][0];
+  //  const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
+  //  const url = Settings.reservoir_url + '/api/v1/download/building_id/' + feature.properties.id + '/';
+  //  this.loadObjFromZipUrl(url, feature.properties.id).then((object3D) => {
+  //    object3D.position.x = baseSceneCoords.x;
+  //    object3D.position.y = 0;
+  //    object3D.position.z = baseSceneCoords.y;
+  //    tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
+  //    object3D.visible = App.featureVisibleInYear(feature, this.year);
+  //    tileDetails.object3D.add(object3D);
+  //    this.featureIdToObjectDetails[feature.properties.id].object3D = object3D;
+  //    this.requestRender();
+  //  });
+  //}
 
   // Request a single render pass in the next animation frame, unless one has already
   // been requested (no point in rendering twice for the same frame).
