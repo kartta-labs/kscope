@@ -1,10 +1,10 @@
-# Renderer
+# kscope
 
-Renderer is client-side only browser application to render a 3D view of maps.
-The input is the map features in an area in GeoJSON format. Renderer is part
+kscope is client-side only browser application to render a 3D view of maps.
+The input is the map features in an area in GeoJSON format. kscope is part
 of the Kartta Labs suite of applications.
 
-To run a local copy of Renderer
+To run a local copy of kscope
 
 1. Copy `config.example.js` to `config.js`
 2. Set the backend endpoint in `config.js` file.
