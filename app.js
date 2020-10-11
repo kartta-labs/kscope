@@ -673,7 +673,6 @@ class App {
       this.processTileZip(features, tileDetails, zip);
     })
     .catch(error => {
-      console.log('yo error! ', error);
     });
   }
 
