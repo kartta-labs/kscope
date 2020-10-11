@@ -34,6 +34,27 @@ class EventTracker {
       'Backspace': true
     };
 
+    this.touchStart = (event) => {
+      event.preventDefault();
+      this.lastTouchP = this.relCoords(event.touches[0]);
+      this.lastTouchTime = event.timeStamp;
+      if (this.touchStartListener) {
+        this.touchStartListener(this.lastTouchP);
+      }
+    };
+
+    this.touchMove = (event) => {
+      event.preventDefault();
+      const p = this.relCoords(event.touches[0]);
+      const t = event.timeStamp;
+      this.lastTouchMove = { x : p.x - this.lastTouchP.x, y : p.y - this.lastTouchP.y };
+      if (this.touchMoveListener) {
+        this.touchMoveListener(p, this.lastTouchMove);
+      }
+      this.lastTouchP = p;
+      this.lastTouchTime = t;
+    };
+
     this.mouseDown = (event) => {
       this.mouseIsDown = true;
       this.lastP = this.relCoords(event);
@@ -96,6 +117,14 @@ class EventTracker {
 
   }
 
+  setTouchStartListener(listener) {
+    this.touchStartListener = listener;
+    return this;
+  }
+  setTouchMoveListener(listener) {
+    this.touchMoveListener = listener;
+    return this;
+  }
   setMouseDownListener(listener) {
     this.mouseDownListener = listener;
     return this;
@@ -131,8 +160,10 @@ class EventTracker {
     window.addEventListener( 'keypress',   this.keyPress,  false );
     window.addEventListener( 'keyup',      this.keyUp,     false );
     this.dom_element.addEventListener( 'mousedown',  this.mouseDown,  false );
-	this.dom_element.addEventListener( 'mousewheel', this.mouseWheel, false );
-	this.dom_element.addEventListener( 'contextmenu', (e) => {
+    this.dom_element.addEventListener( 'mousewheel', this.mouseWheel, false );
+    this.dom_element.addEventListener( 'touchstart', this.touchStart, false );
+    this.dom_element.addEventListener( 'touchmove', this.touchMove, false );
+    this.dom_element.addEventListener( 'contextmenu', (e) => {
       e.preventDefault();
       return false;
     });

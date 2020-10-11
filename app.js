@@ -107,6 +107,14 @@ class App {
       if (e.button == 2) {
         // noop
       }
+    }).setTouchStartListener(p => {
+    }).setTouchMoveListener((p,dp) => {
+        const xangle = 0.25 * (dp.y / this.container.offsetWidth) * Math.PI;
+        const yangle = 0.25 * (dp.x / this.container.offsetWidth) * Math.PI;
+
+        this.cameraXAngle += xangle;
+        this.cameraYAngle += yangle;
+        this.updateCamera();
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
     }).setMouseDragListener((p, dp, button) => {
