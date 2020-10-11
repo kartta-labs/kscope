@@ -108,6 +108,7 @@ header {
 .eyelevel-button {
   border-radius: 5px;
   position: absolute;
+  top: 10px;
   right: 10px;
   border: 1px solid #aaaaaa;
   background-color: white;
@@ -116,21 +117,12 @@ header {
 
 .eyelevel-button:hover {
   background-color: #aaaaaa;
+  border: 3px solid blue;
 }
 
+.eyelevel-img-hidden {
+  display: none;
+}
 .eyelevel-button.street-level {
   top: 10px;
-}
-
-.eyelevel-button.bird-level {
-  top: 70px;
-}
-
-.eyelevel-active {
-  border: 3px solid blue;
-  background-color: white;
-  margin: 0px;
-}
-.eyelevel-active:hover {
-  background-color: white;
 }
