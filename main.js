@@ -271,6 +271,8 @@ window.addEventListener('load', () => {
   }
   birdLevelButton.onclick = handleEyeLevelButtonClick;
   streetLevelButton.onclick = handleEyeLevelButtonClick;
+  birdLevelButton.ontouchstart = handleEyeLevelButtonClick;
+  streetLevelButton.ontouchstart = handleEyeLevelButtonClick;
 
   app.initialize();
 });
