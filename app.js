@@ -155,6 +155,14 @@ class App {
   }
 
   /*
+   * Adjust to a new container size.  Call this e.g. when the browser window size changes.
+   */
+  resize() {
+    this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
+    this.requestRender();
+  }
+
+  /*
    * Set the current year, update the visibility of all objects accordingly, and request a render.
    */
   setYear(year) {
@@ -689,24 +697,10 @@ class App {
     this.requestRender();
   }
 
-  //fetch3DModelAndReplaceExtrusionIfFound(feature, tileDetails, i) {
-  //  const baseArray = feature.geometry.coordinates[0][0];
-  //  const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
-  //  const url = Settings.reservoir_url + '/api/v1/download/building_id/' + feature.properties.id + '/';
-  //  this.loadObjFromZipUrl(url, feature.properties.id).then((object3D) => {
-  //    object3D.position.x = baseSceneCoords.x;
-  //    object3D.position.y = 0;
-  //    object3D.position.z = baseSceneCoords.y;
-  //    tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
-  //    object3D.visible = App.featureVisibleInYear(feature, this.year);
-  //    tileDetails.object3D.add(object3D);
-  //    this.featureIdToObjectDetails[feature.properties.id].object3D = object3D;
-  //    this.requestRender();
-  //  });
-  //}
-
-  // Request a single render pass in the next animation frame, unless one has already
-  // been requested (no point in rendering twice for the same frame).
+  // Request a single re-render in the next possible animation frame.  Note this function does not
+  // actually perform a render -- it just requests that one be done at the next possible time.
+  // Calling this multiple times before the next animation frame will result in only one re-render
+  // on that frame, no matter how many times it was called.
   requestRender() {
     if (this.renderRequested) {
       return;

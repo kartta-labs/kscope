@@ -81,5 +81,9 @@ window.addEventListener('load', () => {
   eyeLevelButton.onclick = handleEyeLevelButtonClick;
   eyeLevelButton.ontouchstart = handleEyeLevelButtonClick;
 
+  window.onresize = () => {
+    app.resize();
+  }
+
   app.initialize();
 });
