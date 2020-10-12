@@ -78,8 +78,10 @@ window.addEventListener('load', () => {
     updateEyeLevelButtonState(currentLevel);
     app.setLevel(currentLevel);
   }
-  eyeLevelButton.onclick = handleEyeLevelButtonClick;
-  eyeLevelButton.ontouchstart = handleEyeLevelButtonClick;
+  streetLevelImg.onclick = handleEyeLevelButtonClick;
+  birdLevelImg.onclick = handleEyeLevelButtonClick;
+  streetLevelImg.ontouchstart = handleEyeLevelButtonClick;
+  birdLevelImg.ontouchstart = handleEyeLevelButtonClick;
 
   window.onresize = () => {
     app.resize();
