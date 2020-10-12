@@ -100,29 +100,22 @@ header {
   cursor: pointer; /* Cursor on hover */
 }
 
-.eyelevel-button img {
-  /* actual image size is 136x128 */
-  width: 40px; /* height will adjust accordingly */
-}
-
-.eyelevel-button {
-  border-radius: 5px;
+img.eyelevel-button {
   position: absolute;
   top: 10px;
   right: 10px;
-  border: 1px solid #aaaaaa;
+  width: 30px; /* height will adjust accordingly */
+  border-radius: 5px;
+  border: 1px solid #333333;
   background-color: white;
   margin: 2px;
 }
 
-.eyelevel-button:hover {
+img.eyelevel-button:hover {
   background-color: #aaaaaa;
   border: 3px solid blue;
 }
 
 .eyelevel-img-hidden {
   display: none;
-}
-.eyelevel-button.street-level {
-  top: 10px;
 }
