@@ -603,7 +603,7 @@ class App {
         promises.push(file.async("text").then(content => {
           const parsedMetadata = JSON.parse(content);
           Object.keys(parsedMetadata).forEach(buildingId => {
-            metadata[buildingId] = JSON.parse(parsedMetadata[buildingId]);
+            metadata[buildingId] = parsedMetadata[buildingId];
           });
         }));
       } else if (path.endsWith(".zip")) {
