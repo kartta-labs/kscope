@@ -159,6 +159,8 @@ class App {
    */
   resize() {
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
+    this.camera.aspect = this.container.offsetWidth / this.container.offsetHeight;
+    this.camera.updateProjectionMatrix();
     this.requestRender();
   }
 
