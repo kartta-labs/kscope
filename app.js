@@ -644,7 +644,8 @@ class App {
             const objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(mtlCreator);
             const object3D = objLoader.parse(content);
-            this.replaceExtrusionWithObject3D(buildingIdToFeature[buildingId], object3D, tileDetails);
+            this.replaceExtrusionWithObject3D(buildingIdToFeature[buildingId],
+                                              object3D, metadata[buildingId], tileDetails);
           }, error => {
             reject(new Error("Error reading obj file in " + obj.path));
           });
@@ -684,9 +685,18 @@ class App {
     });
   }
 
-  replaceExtrusionWithObject3D(feature, object3D, tileDetails) {
-    const baseArray = feature.geometry.coordinates[0][0];
+  replaceExtrusionWithObject3D(feature, object3D, metadata, tileDetails) {
+    // If tag use_location="true", position by lon/lat from metadata.
+    // Otherwise position by first vertex in footprint.
+    let baseArray =
+            ("use_location" in metadata.tags && metadata.tags['use_location'].toLowerCase() == "true")
+            ? [metadata.location.longitude, metadata.location.latitude]
+            : feature.geometry.coordinates[0][0];
     const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
+    object3D.scale.set(
+          Settings.buildingXZScaleShrinkFactor * metadata.scale,
+          metadata.scale,
+          Settings.buildingXZScaleShrinkFactor * metadata.scale );
     object3D.position.x = baseSceneCoords.x;
     object3D.position.y = 0;
     object3D.position.z = baseSceneCoords.y;
