@@ -228,35 +228,53 @@ class App {
     const stairColor = Colors.chooseRandom("stone", featureId);
     const doorColor = blackColor;
     const storeFrontColor = Colors.chooseRandom("concrete", featureId + "storeFront");
+    const roofColor = Colors.chooseRandom("roof", featureId + "roof");
 
     Object.keys(mtlCreator.materialsInfo).forEach(mtlName => {
       if (mtlName.startsWith("front") || mtlName.startsWith("default")) {
         mtlCreator.materialsInfo[mtlName].ka = buildingColor;
         mtlCreator.materialsInfo[mtlName].kd = buildingColor;
+        mtlCreator.materialsInfo[mtlName].ks = buildingColor;
       } else if (mtlName.startsWith("cornice")) {
         mtlCreator.materialsInfo[mtlName].ka = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].kd = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].ks = blackColor;
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("sill")) {
         mtlCreator.materialsInfo[mtlName].ka = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].kd = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].ks = blackColor;
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("roofcornice")) {
         mtlCreator.materialsInfo[mtlName].ka = roofCorniceColor;
         mtlCreator.materialsInfo[mtlName].kd = roofCorniceColor;
         mtlCreator.materialsInfo[mtlName].ks = roofCorniceColor;
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("stair")) {
         mtlCreator.materialsInfo[mtlName].ka = stairColor;
         mtlCreator.materialsInfo[mtlName].kd = stairColor;
+        mtlCreator.materialsInfo[mtlName].ks = [0.2, 0.2, 0.2];
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("doorcasing")) {
         mtlCreator.materialsInfo[mtlName].ka = buildingColor;
         mtlCreator.materialsInfo[mtlName].kd = buildingColor;
       } else if (mtlName.startsWith("door")) {
         mtlCreator.materialsInfo[mtlName].ka = doorColor;
         mtlCreator.materialsInfo[mtlName].kd = doorColor;
+      } else if (mtlName.startsWith("roof")) {
+        mtlCreator.materialsInfo[mtlName].ka = roofColor;
+        mtlCreator.materialsInfo[mtlName].kd = roofColor;
+        mtlCreator.materialsInfo[mtlName].ks = roofColor;
+        mtlCreator.materialsInfo[mtlName].ns = 5;
       } else if (mtlName.startsWith("storefront")) {
         mtlCreator.materialsInfo[mtlName].ka = storeFrontColor;
         mtlCreator.materialsInfo[mtlName].kd = storeFrontColor;
+      } else if (mtlName.match(/^window\d+$/)) {
+        mtlCreator.materialsInfo[mtlName].ka = [0.1, 0.1, 0.1];
+        mtlCreator.materialsInfo[mtlName].kd = [0.1, 0.1, 0.1];
+        mtlCreator.materialsInfo[mtlName].ks = [0.3, 0.3, 0.3];
+        mtlCreator.materialsInfo[mtlName].ns = 10;
+        mtlCreator.materialsInfo[mtlName].d = 0.85;
       }
     });
   }
