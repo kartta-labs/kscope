@@ -25,14 +25,6 @@ import {Util} from "./util.js";
 import {Tile, Tiler} from "./tiles.js";
 
 
-window.yodoit = (c,msg) => {
-  if (msg) {
-    console.log(msg+' keys(c materials)=',Object.keys(c.materials));
-  } else {
-    console.log('keys(c materials)=',Object.keys(c.materials));
-  }
-};
-
 class App {
   /**
    */
@@ -561,7 +553,7 @@ class App {
           brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
           colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
-      } else if (features[i].properties['sidewalk']) {
+      } else if (features[i].properties['sidewalk'] || features[i].properties['footway'] == "sidewalk") {
         // We currently use the same function to load and minimally extrude
         // sidewalks, that we use for buildings. This works by assuming sidewalks
         // as flat (i.e., with zero stories) buildings. Ideally we should have a
@@ -575,8 +567,12 @@ class App {
           brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
           colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
+      } else if (features[i].properties['highway']) {
+        // we don't currently render highways
+      } else if (features[i].properties['area:highway']) {
+        // we don't currently render highways
       } else {
-        //console.log('feature is not supported for rendering.');
+        console.log('feature is not supported for rendering.');
       }
       if (extrusion != null) {
         this.featureIdToObjectDetails[features[i].properties.id] = {
