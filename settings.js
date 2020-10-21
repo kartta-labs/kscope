@@ -70,8 +70,8 @@ let Settings = {
 
   'year': 1940,
   'tilesize' : 1000,
-  'fetchradius' : 8,
-  'dropradius' : 11,
+  'fetchradius' : 10,
+  'dropradius' : 13,
   'speed' : 1.0,
   'debug' : false,
   'pitch': 0,
@@ -91,7 +91,7 @@ let Settings = {
     'bird': -0.75   // pitch angle set to this when entering bird level
   },
   'eyeHeight': {
-    'street': 1.7,
+    'street': 2.0,
     'bird': 200
   }
 

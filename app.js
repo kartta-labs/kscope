@@ -25,14 +25,6 @@ import {Util} from "./util.js";
 import {Tile, Tiler} from "./tiles.js";
 
 
-window.yodoit = (c,msg) => {
-  if (msg) {
-    console.log(msg+' keys(c materials)=',Object.keys(c.materials));
-  } else {
-    console.log('keys(c materials)=',Object.keys(c.materials));
-  }
-};
-
 class App {
   /**
    */
@@ -159,6 +151,8 @@ class App {
    */
   resize() {
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
+    this.camera.aspect = this.container.offsetWidth / this.container.offsetHeight;
+    this.camera.updateProjectionMatrix();
     this.requestRender();
   }
 
@@ -228,35 +222,53 @@ class App {
     const stairColor = Colors.chooseRandom("stone", featureId);
     const doorColor = blackColor;
     const storeFrontColor = Colors.chooseRandom("concrete", featureId + "storeFront");
+    const roofColor = Colors.chooseRandom("roof", featureId + "roof");
 
     Object.keys(mtlCreator.materialsInfo).forEach(mtlName => {
       if (mtlName.startsWith("front") || mtlName.startsWith("default")) {
         mtlCreator.materialsInfo[mtlName].ka = buildingColor;
         mtlCreator.materialsInfo[mtlName].kd = buildingColor;
+        mtlCreator.materialsInfo[mtlName].ks = buildingColor;
       } else if (mtlName.startsWith("cornice")) {
         mtlCreator.materialsInfo[mtlName].ka = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].kd = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].ks = blackColor;
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("sill")) {
         mtlCreator.materialsInfo[mtlName].ka = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].kd = windowTreatmentColor;
         mtlCreator.materialsInfo[mtlName].ks = blackColor;
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("roofcornice")) {
         mtlCreator.materialsInfo[mtlName].ka = roofCorniceColor;
         mtlCreator.materialsInfo[mtlName].kd = roofCorniceColor;
         mtlCreator.materialsInfo[mtlName].ks = roofCorniceColor;
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("stair")) {
         mtlCreator.materialsInfo[mtlName].ka = stairColor;
         mtlCreator.materialsInfo[mtlName].kd = stairColor;
+        mtlCreator.materialsInfo[mtlName].ks = [0.2, 0.2, 0.2];
+        mtlCreator.materialsInfo[mtlName].ns = 0;
       } else if (mtlName.startsWith("doorcasing")) {
         mtlCreator.materialsInfo[mtlName].ka = buildingColor;
         mtlCreator.materialsInfo[mtlName].kd = buildingColor;
       } else if (mtlName.startsWith("door")) {
         mtlCreator.materialsInfo[mtlName].ka = doorColor;
         mtlCreator.materialsInfo[mtlName].kd = doorColor;
+      } else if (mtlName.startsWith("roof")) {
+        mtlCreator.materialsInfo[mtlName].ka = roofColor;
+        mtlCreator.materialsInfo[mtlName].kd = roofColor;
+        mtlCreator.materialsInfo[mtlName].ks = roofColor;
+        mtlCreator.materialsInfo[mtlName].ns = 5;
       } else if (mtlName.startsWith("storefront")) {
         mtlCreator.materialsInfo[mtlName].ka = storeFrontColor;
         mtlCreator.materialsInfo[mtlName].kd = storeFrontColor;
+      } else if (mtlName.match(/^window\d+$/)) {
+        mtlCreator.materialsInfo[mtlName].ka = [0.1, 0.1, 0.1];
+        mtlCreator.materialsInfo[mtlName].kd = [0.1, 0.1, 0.1];
+        mtlCreator.materialsInfo[mtlName].ks = [0.3, 0.3, 0.3];
+        mtlCreator.materialsInfo[mtlName].ns = 10;
+        mtlCreator.materialsInfo[mtlName].d = 0.85;
       }
     });
   }
@@ -541,7 +553,7 @@ class App {
           brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
           colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
-      } else if (features[i].properties['sidewalk']) {
+      } else if (features[i].properties['sidewalk'] || features[i].properties['footway'] == "sidewalk") {
         // We currently use the same function to load and minimally extrude
         // sidewalks, that we use for buildings. This works by assuming sidewalks
         // as flat (i.e., with zero stories) buildings. Ideally we should have a
@@ -555,8 +567,12 @@ class App {
           brightnessOfExtrudedModels: Settings.brightnessOfExtrudedModels,
           colorVariationOfExtrudedModels: Settings.colorVariationOfExtrudedModels
         });
+      } else if (features[i].properties['highway']) {
+        // we don't currently render highways
+      } else if (features[i].properties['area:highway']) {
+        // we don't currently render highways
       } else {
-        //console.log('feature is not supported for rendering.');
+        console.log('feature is not supported for rendering.');
       }
       if (extrusion != null) {
         this.featureIdToObjectDetails[features[i].properties.id] = {
@@ -603,7 +619,7 @@ class App {
         promises.push(file.async("text").then(content => {
           const parsedMetadata = JSON.parse(content);
           Object.keys(parsedMetadata).forEach(buildingId => {
-            metadata[buildingId] = JSON.parse(parsedMetadata[buildingId]);
+            metadata[buildingId] = parsedMetadata[buildingId];
           });
         }));
       } else if (path.endsWith(".zip")) {
@@ -644,7 +660,8 @@ class App {
             const objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(mtlCreator);
             const object3D = objLoader.parse(content);
-            this.replaceExtrusionWithObject3D(buildingIdToFeature[buildingId], object3D, tileDetails);
+            this.replaceExtrusionWithObject3D(buildingIdToFeature[buildingId],
+                                              object3D, metadata[buildingId], tileDetails);
           }, error => {
             reject(new Error("Error reading obj file in " + obj.path));
           });
@@ -684,9 +701,18 @@ class App {
     });
   }
 
-  replaceExtrusionWithObject3D(feature, object3D, tileDetails) {
-    const baseArray = feature.geometry.coordinates[0][0];
+  replaceExtrusionWithObject3D(feature, object3D, metadata, tileDetails) {
+    // If tag use_location="true", position by lon/lat from metadata.
+    // Otherwise position by first vertex in footprint.
+    let baseArray =
+            ("use_location" in metadata.tags && metadata.tags['use_location'].toLowerCase() == "true")
+            ? [metadata.location.longitude, metadata.location.latitude]
+            : feature.geometry.coordinates[0][0];
     const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
+    object3D.scale.set(
+          Settings.buildingXZScaleShrinkFactor * metadata.scale,
+          metadata.scale,
+          Settings.buildingXZScaleShrinkFactor * metadata.scale );
     object3D.position.x = baseSceneCoords.x;
     object3D.position.y = 0;
     object3D.position.z = baseSceneCoords.y;
