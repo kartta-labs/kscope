@@ -26,6 +26,7 @@ class EventTracker {
     this.mouseWheelListener = null;
     this.keyPressListener = null;
     this.keyUpListener = null;
+    this.lastTouchP = null;
 
     this.specialKeys = {
       'Tab': true,
@@ -36,7 +37,7 @@ class EventTracker {
 
     this.touchStart = (event) => {
       event.preventDefault();
-      this.lastTouchP = this.relCoords(event.touches[0]);
+      this.lastTouchP = this.relTouchCoords(event);
       this.lastTouchTime = event.timeStamp;
       if (this.touchStartListener) {
         this.touchStartListener(this.lastTouchP);
@@ -45,9 +46,14 @@ class EventTracker {
 
     this.touchMove = (event) => {
       event.preventDefault();
-      const p = this.relCoords(event.touches[0]);
+      const p = this.relTouchCoords(event);
       const t = event.timeStamp;
-      this.lastTouchMove = { x : p.x - this.lastTouchP.x, y : p.y - this.lastTouchP.y };
+      this.lastTouchMove = p.map((p,i) => {
+        return {
+          x : p.x - this.lastTouchP[i].x,
+	      y : p.y - this.lastTouchP[i].y
+	    };
+      });
       if (this.touchMoveListener) {
         this.touchMoveListener(p, this.lastTouchMove);
       }
@@ -154,6 +160,14 @@ class EventTracker {
     return { x : event.pageX - this.dom_element.offsetLeft,
              y : event.pageY - this.dom_element.offsetTop,
              button: event.button };
+  }
+
+  relTouchCoords(event) {
+    const touchP = [];
+    for (let i = 0; i < event.touches.length; ++i) {
+      touchP.push(this.relCoords(event.touches[i]));
+    }
+    return touchP;
   }
 
   start() {

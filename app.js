@@ -101,12 +101,33 @@ class App {
       }
     }).setTouchStartListener(p => {
     }).setTouchMoveListener((p,dp) => {
-        const xangle = 0.25 * (dp.y / this.container.offsetWidth) * Math.PI;
-        const yangle = 0.25 * (dp.x / this.container.offsetWidth) * Math.PI;
+      if (p.length >= 2) {
+        // t = translation component of multitouch gesture
+        const t = new THREE.Vector2(
+            (dp[0].x + dp[1].x) / 2,
+            (dp[0].y + dp[1].y) / 2
+        );
+        // m1 = midpoint of 1st two touchpoints (final positions)
+        const m1 = new THREE.Vector2(
+            (p[0].x + p[1].x) / 2,
+            (p[0].y + p[1].y) / 2
+        );
+        // m0 = midpoint of 1st two touchpoints (initial positions)
+        const m0 = new THREE.Vector2().subVectors(m1, t);
+        const g0 = this.screenToGroundSceneCoords(m0);
+        const g1 = this.screenToGroundSceneCoords(m1);
+        const dg = new THREE.Vector3().subVectors(g1, g0);
+        this.cameraX -= dg.x;
+        this.cameraZ -= dg.z;
+        this.updateCamera();
+      } else {
+        const xangle = 0.25 * (dp[0].y / this.container.offsetWidth) * Math.PI;
+        const yangle = 0.25 * (dp[0].x / this.container.offsetWidth) * Math.PI;
 
         this.cameraXAngle += xangle;
         this.cameraYAngle += yangle;
         this.updateCamera();
+      }
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
     }).setMouseDragListener((p, dp, button) => {
@@ -144,6 +165,22 @@ class App {
       ? parseInt(feature.properties['end_date'])
       : 10000;
     return start_date <= year && year < end_date;
+  }
+
+  screenToGroundSceneCoords(pScreen) {
+    const pViewport = this.screenToViewportCoords(pScreen);
+        const pWorld = new THREE.Vector3( pViewport.x, pViewport.y, -1 ).unproject( this.camera );
+        const cWorld = new THREE.Vector3(this.cameraX, this.cameraY, this.cameraZ);
+        const s = cWorld.y / (cWorld.y - pWorld.y);
+        const g = new THREE.Vector3(cWorld.x + s * (pWorld.x - cWorld.x), 0, cWorld.z + s * (pWorld.z - cWorld.z));
+    return g;
+  }
+
+  screenToViewportCoords(screenPoint) {
+    return new THREE.Vector2(
+      (2 * screenPoint.x)/this.container.offsetWidth - 1,
+      1 - (2 * screenPoint.y)/this.container.offsetHeight
+    );
   }
 
   /*
