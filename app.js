@@ -102,31 +102,28 @@ class App {
     }).setTouchStartListener(p => {
     }).setTouchMoveListener((p,dp) => {
       if (p.length >= 2) {
-        // t = translation component of multitouch gesture
+        // >= 2 touch points: rotate camera
+
+        // t = displacement of the midpoint of the 1st two touch points, between this
+        // event and the last one
         const t = new THREE.Vector2(
             (dp[0].x + dp[1].x) / 2,
             (dp[0].y + dp[1].y) / 2
         );
-        // m1 = midpoint of 1st two touchpoints (final positions)
-        const m1 = new THREE.Vector2(
-            (p[0].x + p[1].x) / 2,
-            (p[0].y + p[1].y) / 2
-        );
-        // m0 = midpoint of 1st two touchpoints (initial positions)
-        const m0 = new THREE.Vector2().subVectors(m1, t);
-        const g0 = this.screenToGroundSceneCoords(m0);
-        const g1 = this.screenToGroundSceneCoords(m1);
-        const dg = new THREE.Vector3().subVectors(g1, g0);
-        this.cameraX -= dg.x;
-        this.cameraZ -= dg.z;
-        this.updateCamera();
-      } else {
-        const xangle = 0.25 * (dp[0].y / this.container.offsetWidth) * Math.PI;
-        const yangle = 0.25 * (dp[0].x / this.container.offsetWidth) * Math.PI;
+
+        const xangle = 0.25 * (t.y / this.container.offsetWidth) * Math.PI;
+        const yangle = 0.25 * (t.x / this.container.offsetWidth) * Math.PI;
 
         this.cameraXAngle += xangle;
         this.cameraYAngle += yangle;
         this.updateCamera();
+      } else {
+        // 1 touch point: translate camera
+
+        // t = touch point displacement, between this event and the last
+        const t = new THREE.Vector2(dp[0].x / this.container.offsetWidth,
+                                    dp[0].y / this.container.offsetWidth);
+        this.moveCamera(t);
       }
     }).setMouseUpListener(e => {
       //console.log('mouseUp: e = ', e);
@@ -223,7 +220,22 @@ class App {
      return this.speed * (1.0 + 5.0 * (this.cameraY - 1.7) / (85.0 - 1.7));
   }
 
+  moveCamera(t) {
+    const lookDir = new THREE.Vector3();
+    this.camera.getWorldDirection(lookDir);
+    const lookLen = Math.sqrt(lookDir.x*lookDir.x + lookDir.z*lookDir.z);
+    const speed = 50; // chosen by experimentation on a phone
+    const f = speed / lookLen;
+    const forwardDisplacement = new THREE.Vector2(lookDir.x, lookDir.z).multiplyScalar(f * t.y);
+    const rightDisplacement = new THREE.Vector2(lookDir.z, -lookDir.x).multiplyScalar(f * t.x);
+    this.cameraX += (forwardDisplacement.x + rightDisplacement.x);
+    this.cameraZ += (forwardDisplacement.y + rightDisplacement.y);
+    this.updateCamera();
+  }
+
   walkCamera(amount, sideways) {
+    //TODO: combine walkCamera and moveCamera functions.  They are essentially doing the same thing, except
+    //walkCamera moves only along the forward/right axes, and the speeds are different.
     const lookDir = new THREE.Vector3();
     this.camera.getWorldDirection(lookDir);
     const lookLen = Math.sqrt(lookDir.x*lookDir.x + lookDir.z*lookDir.z);
