@@ -108,41 +108,41 @@ class Ground {
     this.object3D.position.y = -0.05;
     this.updateCoordsForCameraPosition();
     this.app.scene.add(this.object3D);
-//this.debugdebugdemo();
-this.debugdebugdemo3();
+    this.render();
   }
 
-  debugdebugdemo3() {
+  render() {
     this.textureCanvas.fillStyle("#00ff00");
-    this.textureCanvas.fillRect(-this.F, -this.F, 2*this.F, 2*this.F);
+    this.textureCanvas.fillRect(this.object3D.position.x-this.F, this.object3D.position.y-this.F, 2*this.F, 2*this.F);
 
     this.textureCanvas.strokeStyle("#ff0000");
     this.textureCanvas.lineWidth(2);
 
     this.textureCanvas.beginPath();
-    this.textureCanvas.moveTo(-0.95*this.F, -0.95*this.F);
-    this.textureCanvas.lineTo(0.95*this.F, 0.95*this.F);
+    this.textureCanvas.moveTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y-0.95*this.F);
+    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y+0.95*this.F);
     this.textureCanvas.stroke();
 
     this.textureCanvas.beginPath();
-    this.textureCanvas.moveTo(-0.95*this.F, 0.95*this.F);
-    this.textureCanvas.lineTo(0.95*this.F, -0.95*this.F);
+    this.textureCanvas.moveTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y+0.95*this.F);
+    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y-0.95*this.F);
     this.textureCanvas.stroke();
 
     this.textureCanvas.beginPath();
-    this.textureCanvas.moveTo(-0.95*this.F, -0.95*this.F);
-    this.textureCanvas.lineTo(0.95*this.F, -0.95*this.F);
-    this.textureCanvas.lineTo(0.95*this.F, 0.95*this.F);
-    this.textureCanvas.lineTo(-0.95*this.F, 0.95*this.F);
-    this.textureCanvas.lineTo(-0.95*this.F, -0.95*this.F);
+    this.textureCanvas.moveTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y-0.95*this.F);
+    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y-0.95*this.F);
+    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y+0.95*this.F);
+    this.textureCanvas.lineTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y+0.95*this.F);
+    this.textureCanvas.lineTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y-0.95*this.F);
     this.textureCanvas.stroke();
   }
 
   maybeRecenterForCameraPosition() {
     if (this.object3D) {
-      if (Math.abs(this.object3D.position.x - this.cameraX) > 500
-          || Math.abs(this.object3D.position.z - this.cameraZ) > 500) {
+      if (Math.abs(this.object3D.position.x - this.app.cameraX) > 500
+          || Math.abs(this.object3D.position.z - this.app.cameraZ) > 500) {
         this.updateCoordsForCameraPosition();
+        this.render();
       }
     }
   }
