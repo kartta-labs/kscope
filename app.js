@@ -482,7 +482,7 @@ class App {
       this.skybox.position.z = this.cameraZ;
     }
     if (this.ground) {
-      this.ground.updateForCameraPosition();
+      this.ground.maybeRecenterForCameraPosition();
     }
 //xxx    if (this.ground) {
 //xxx      if (Math.abs(this.ground.position.x - this.cameraX) > 500
