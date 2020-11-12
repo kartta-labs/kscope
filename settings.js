@@ -92,7 +92,7 @@ let Settings = {
   },
   'eyeHeight': {
     'street': 2.0,
-    'bird': 200
+    'bird': 2000 //debugdebug
   }
 
 };

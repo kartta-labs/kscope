@@ -19,6 +19,7 @@ import {Coords} from "./coords.js";
 import {EventTracker} from "./event_tracker.js";
 import {Extruder} from "./extruder.js";
 import {FetchQueue} from "./fetch_queue.js";
+import {Ground} from "./ground.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
 import {Util} from "./util.js";
@@ -481,12 +482,15 @@ class App {
       this.skybox.position.z = this.cameraZ;
     }
     if (this.ground) {
-      if (Math.abs(this.ground.position.x - this.cameraX) > 500
-          || Math.abs(this.ground.position.z - this.cameraZ) > 500) {
-        this.ground.position.x = this.cameraX;
-        this.ground.position.z = this.cameraZ;
-      }
+      this.ground.updateForCameraPosition();
     }
+//xxx    if (this.ground) {
+//xxx      if (Math.abs(this.ground.position.x - this.cameraX) > 500
+//xxx          || Math.abs(this.ground.position.z - this.cameraZ) > 500) {
+//xxx        this.ground.position.x = this.cameraX;
+//xxx        this.ground.position.z = this.cameraZ;
+//xxx      }
+//xxx    }
     this.requestRender();
   }
 
@@ -517,28 +521,7 @@ class App {
   }
 
   initializeGround() {
-    return Util.LoadTexture('images/asphalt.jpg')
-          .then((asphalt) => {
-            asphalt.repeat.set(2000, 2000);
-            asphalt.wrapS = THREE.RepeatWrapping;
-            asphalt.wrapT = THREE.RepeatWrapping;
-            const planeMaterial = new THREE.MeshStandardMaterial({
-              map: asphalt,
-              color: new THREE.Color(.5,.5,.5),
-              side: THREE.DoubleSide
-            });
-            const planeGeometry = new THREE.PlaneGeometry(Settings.farPlane, Settings.farPlane);
-            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-            plane.rotation.x = -Math.PI / 2;
-            plane.name = 'ground';
-            if (Settings.shadows) {
-              plane.receiveShadow = true;
-            }
-            plane.position.x = this.cameraX;
-            plane.position.z = this.cameraZ;
-            this.ground = plane;
-            this.scene.add(plane);
-          });
+    this.ground = new Ground(this);
   }
 
   initializeSky() {
@@ -804,11 +787,12 @@ class App {
 
     // camera
     this.initializeCamera();
+    this.initializeGround();
 
     // action!
-    this.requestRenderAfterEach(
-        this.initializeGround(),
-        this.initializeSky());
+//debugdebug
+//    this.requestRenderAfterEach(this.initializeSky());
+    this.requestRender();
     this.refreshDataForNewCameraPosition();
   }
 }
