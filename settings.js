@@ -94,7 +94,7 @@ let Settings = {
     'street': 2.0,
     'bird': 200
   },
-  'waterColor': "#0000ff",
+  'waterColor': "#aecaff", //  (174, 202, 208)
   'landColor': "#ebe8d3",
 
   // pixel height and width of the in-memory canvas used as the

@@ -46,7 +46,7 @@ class Ground {
                                            -1, -1, 1, 1);
     this.textureCanvas.clear(Settings.waterColor);
 
-    const mat = new THREE.MeshPhongMaterial({
+    const mat = new THREE.MeshBasicMaterial({
       map: this.textureCanvas.getTexture(),
       side: THREE.DoubleSide
     });

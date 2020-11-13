@@ -790,8 +790,7 @@ class App {
     this.initializeGround();
 
     // action!
-//debugdebug
-//    this.requestRenderAfterEach(this.initializeSky());
+    this.requestRenderAfterEach(this.initializeSky());
     this.requestRender();
     this.refreshDataForNewCameraPosition();
   }
