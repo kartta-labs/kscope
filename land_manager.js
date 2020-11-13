@@ -52,6 +52,22 @@ function tileDistance(tileCoord1, tileCoord2) {
                   Math.abs(tileCoord1[1] - tileCoord2[1]));
 }
 
+const k = 10.0;
+const ROAD_WIDTHS = {
+  living_street: 1*k,
+  secondary: 1*k,
+  tertiary: 1*k,
+  unclassified: 1*k,
+  path: 1*k,
+  residential: 1*k,
+
+  primary: 2*k,
+  bridge: 2*k,
+
+  motorway: 3*k,
+  trunk: 3*k
+};
+
 class LandManager {
   constructor(app, textureCanvas, z, landFetchRadius, landDropRadius) {
     this.app = app;
@@ -96,6 +112,7 @@ class LandManager {
         key: key,
         tileCoord: tileCoord,
         landFeatures: [],
+        roadFeatures: [],
         loaded: false,
       };
       this.fetchAndRenderLandTile(this.landTileDetails[key]);
@@ -114,12 +131,19 @@ class LandManager {
       const z = landTileDetail.tileCoord[2];
       const tile = new mvt.VectorTile(new Protobuf(data));
       const obj = new THREE.Object3D();
-      if (!tile.layers.land) { return; }
       landTileDetail.loaded = true;
-      for (let i = 0; i < tile.layers.land.length; ++i) {
-        const f = tile.layers.land.feature(i);
-        const gf = f.toGeoJSON(x,y,z);
-        landTileDetail.landFeatures.push(gf);
+
+      if (tile.layers.land) {
+        for (let i = 0; i < tile.layers.land.length; ++i) {
+          const f = tile.layers.land.feature(i);
+          const gf = f.toGeoJSON(x,y,z);
+          landTileDetail.landFeatures.push(gf);
+        }
+      }
+      if (tile.layers.roads) {
+        for (let i = 0; i < tile.layers.roads.length; ++i) {
+          landTileDetail.roadFeatures.push(tile.layers.roads.feature(i).toGeoJSON(x,y,z));
+        }
       }
       this.renderLandTile(landTileDetail);
       this.app.requestRender();
@@ -128,6 +152,7 @@ class LandManager {
 
   renderLandTile(landTileDetails) {
     this.textureCanvas.fillStyle(Settings.landColor);
+
     landTileDetails.landFeatures.forEach(landFeature => {
       if (landFeature.geometry.type == 'Polygon') {
         this.fillPolygonFeature(landFeature.geometry.coordinates);
@@ -137,6 +162,31 @@ class LandManager {
         });
       }
     });
+
+
+    landTileDetails.roadFeatures.forEach(roadFeature => {
+      const width = roadFeature.properties.type in ROAD_WIDTHS ? ROAD_WIDTHS[roadFeature.properties.type] : 1;
+      if (roadFeature.geometry.type == 'LineString') {
+        this.drawLineStringFeature(roadFeature.geometry.coordinates, width);
+      } else if (roadFeature.geometry.type == 'MultiLineString') {
+        roadFeature.geometry.coordinates.forEach(roadCoordinates => {
+          this.drawLineStringFeature(roadCoordinates, width);
+        });
+      }
+    });
+  }
+
+  drawLineStringFeature(coordinates, width) {
+    const lonLatDegreesArray = coordinates.map(lonLatDegrees => new THREE.Vector2(lonLatDegrees[0], lonLatDegrees[1]));
+    const sceneCoordsArray = lonLatDegreesArray.map(lonLatDegrees => this.app.coords.lonLatDegreesToSceneCoords(lonLatDegrees));
+    this.textureCanvas.lineWidth(width);
+    this.textureCanvas.strokeStyle(Settings.roadColor);
+    this.textureCanvas.beginPath();
+    this.textureCanvas.moveTo(sceneCoordsArray[0].x, sceneCoordsArray[0].y);
+    for (let i = 1; i < sceneCoordsArray.length; ++i) {
+      this.textureCanvas.lineTo(sceneCoordsArray[i].x, sceneCoordsArray[i].y);
+    }
+    this.textureCanvas.stroke();
   }
 
   fillPolygonFeature(coordinates) {

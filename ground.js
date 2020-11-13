@@ -23,7 +23,7 @@ class Ground {
     this.app = app;
 
     var geom = new THREE.Geometry();
-    this.F = Settings.farPlane;
+    this.F = Settings.farPlane/2;
     geom.vertices.push(new THREE.Vector3(this.F, this.F, 0));
     geom.vertices.push(new THREE.Vector3(this.F, -this.F, 0));
     geom.vertices.push(new THREE.Vector3(-this.F, -this.F, 0));

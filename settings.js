@@ -96,6 +96,7 @@ let Settings = {
   },
   'waterColor': "#aecaff", //  (174, 202, 208)
   'landColor': "#ebe8d3",
+  'roadColor': "#000000",
 
   // pixel height and width of the in-memory canvas used as the
   // texture for the ground square; should be a power of 2:
