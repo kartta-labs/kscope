@@ -12,62 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {LandManager} from "./land_manager.js";
 import {Settings} from "./settings.js";
 import {TextureCanvas} from "./texture_canvas.js";
 import {Util} from "./util.js";
-import {Coords} from "./coords.js";
-
-/**
- * @param lonLatDegrees (THREE.Vector2) lon [x] and lat [y] in degrees
- * @param z (int) tile zoom level
- */
-function lonLatDegreesToTileCoord(lonLatDegrees, z) {
-  const d = lonLatDegrees.x + 180.0;  // degrees east of international date line:
-  const f = d / 360.0;  // d scaled to a fraction between 0.0 and 1.0
-  const x = f * 2**z;
-
-  const rLat = lonLatDegrees.y * Math.PI / 180.0; // lat in radians
-  const y = 2**z * (1 - (Math.log(Math.tan(rLat) + (1.0/Math.cos(rLat))) / Math.PI)) / 2;
-
-  return [Math.floor(x), Math.floor(y), z];
-}
-
-function wrap(v, n) {
-  if (v >= 0) {
-    return v % n;
-  }
-  return (n - (-v % n)) % n;
-}
-
-function clamp(v, n) {
-  if (v <= 0) { return 0; }
-  if (v >= n-1) { return n-1; }
-  return v;
-}
-
-function tileCoordsInRadius(tileCoord, radius) {
-  const z = tileCoord[2];
-  const tiles = [];
-  for (let dx = -radius; dx <= radius; ++dx) {
-    const x = wrap(tileCoord[0] + dx, 2**z);
-    for (let dy = -radius; dy <= radius; ++dy) {
-      const y = clamp(tileCoord[1] + dy, 2**z);
-      tiles.push([x,y,z]);
-    }
-  }
-  return tiles;
-}
-
-function tileCoordKey(tileCoord) {
-  // z/x/y
-  return tileCoord[2] + "/" + tileCoord[0] + "/" + tileCoord[1];
-}
-
-function tileDistance(tileCoord1, tileCoord2) {
-  return Math.max(Math.abs(tileCoord1[0] - tileCoord2[0]),
-                  Math.abs(tileCoord1[1] - tileCoord2[1]));
-}
-
 
 class Ground {
 
@@ -75,8 +23,7 @@ class Ground {
     this.app = app;
 
     var geom = new THREE.Geometry();
-    //this.F = Settings.farPlane;
-    this.F = 800;  //debugdebug
+    this.F = Settings.farPlane;
     geom.vertices.push(new THREE.Vector3(this.F, this.F, 0));
     geom.vertices.push(new THREE.Vector3(this.F, -this.F, 0));
     geom.vertices.push(new THREE.Vector3(-this.F, -this.F, 0));
@@ -94,8 +41,10 @@ class Ground {
     geom.faces.push(new THREE.Face3(3, 0, 2));
     geom.faceVertexUvs[0].push([uvs[3], uvs[0], uvs[2]]);
 
-    const textureSize = 2048; // should be a power of 2
-    this.textureCanvas = new TextureCanvas(textureSize, textureSize, -1, -1, 1, 1);
+    this.textureCanvas = new TextureCanvas(Settings.groundTextureSize,
+                                           Settings.groundTextureSize,
+                                           -1, -1, 1, 1);
+    this.textureCanvas.clear(Settings.waterColor);
 
     const mat = new THREE.MeshPhongMaterial({
       map: this.textureCanvas.getTexture(),
@@ -108,33 +57,10 @@ class Ground {
     this.object3D.position.y = -0.05;
     this.updateCoordsForCameraPosition();
     this.app.scene.add(this.object3D);
-    this.render();
-  }
-
-  render() {
-    this.textureCanvas.fillStyle("#00ff00");
-    this.textureCanvas.fillRect(this.object3D.position.x-this.F, this.object3D.position.y-this.F, 2*this.F, 2*this.F);
-
-    this.textureCanvas.strokeStyle("#ff0000");
-    this.textureCanvas.lineWidth(2);
-
-    this.textureCanvas.beginPath();
-    this.textureCanvas.moveTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y-0.95*this.F);
-    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y+0.95*this.F);
-    this.textureCanvas.stroke();
-
-    this.textureCanvas.beginPath();
-    this.textureCanvas.moveTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y+0.95*this.F);
-    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y-0.95*this.F);
-    this.textureCanvas.stroke();
-
-    this.textureCanvas.beginPath();
-    this.textureCanvas.moveTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y-0.95*this.F);
-    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y-0.95*this.F);
-    this.textureCanvas.lineTo(this.object3D.position.x+0.95*this.F, this.object3D.position.y+0.95*this.F);
-    this.textureCanvas.lineTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y+0.95*this.F);
-    this.textureCanvas.lineTo(this.object3D.position.x-0.95*this.F, this.object3D.position.y-0.95*this.F);
-    this.textureCanvas.stroke();
+    this.landManager = new LandManager(this.app,
+                                       this.textureCanvas,
+                                       /*z=*/15, /*landFetchRadius=*/5, /*landDropRadius=*/7);
+    this.landManager.updateLandForCameraPosition();
   }
 
   maybeRecenterForCameraPosition() {
@@ -142,7 +68,8 @@ class Ground {
       if (Math.abs(this.object3D.position.x - this.app.cameraX) > 500
           || Math.abs(this.object3D.position.z - this.app.cameraZ) > 500) {
         this.updateCoordsForCameraPosition();
-        this.render();
+        this.landManager.rerender();
+        //this.render();
       }
     }
   }
@@ -152,9 +79,9 @@ class Ground {
     this.object3D.position.z = this.app.cameraZ;
     this.textureCanvas.setCoords(
         this.object3D.position.x - this.F, // xMin,
-        this.object3D.position.y - this.F, // yMin,
+        this.object3D.position.z + this.F, // yMin,
         this.object3D.position.x + this.F, // xMax,
-        this.object3D.position.y + this.F // yMax
+        this.object3D.position.z - this.F // yMax
     );
   }
 

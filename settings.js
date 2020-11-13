@@ -92,9 +92,14 @@ let Settings = {
   },
   'eyeHeight': {
     'street': 2.0,
-    'bird': 2000 //debugdebug
-  }
+    'bird': 200
+  },
+  'waterColor': "#0000ff",
+  'landColor': "#ebe8d3",
 
+  // pixel height and width of the in-memory canvas used as the
+  // texture for the ground square; should be a power of 2:
+  'groundTextureSize': 4096
 };
 
 export {Settings};

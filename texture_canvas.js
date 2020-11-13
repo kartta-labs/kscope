@@ -32,8 +32,9 @@ class TextureCanvas {
     return [this.xInterp.interpolate(x), this.yInterp.interpolate(y)];
   }
 
-  clear() {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  clear(fillStyle) {
+      this.ctx.fillStyle = fillStyle;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       this.texture.needsUpdate = true;
   }
   fillStyle(style) {
