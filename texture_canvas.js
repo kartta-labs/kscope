@@ -5,7 +5,7 @@ class TextureCanvas {
   constructor(canvasWidthPixels, canvasHeightPixels, xMin, yMin, xMax, yMax) {
     this.canvasWidthPixels = canvasWidthPixels;
     this.canvasHeightPixels = canvasHeightPixels;
-    this.canvas = document.createElement("canvas"); //document.getElementById("debugdebugcanvas");
+    this.canvas = document.createElement("canvas");
     this.canvas.width = canvasWidthPixels;
     this.canvas.height = canvasHeightPixels;
     this.ctx = this.canvas.getContext('2d');
