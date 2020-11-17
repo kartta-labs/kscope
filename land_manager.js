@@ -52,7 +52,7 @@ function tileDistance(tileCoord1, tileCoord2) {
                   Math.abs(tileCoord1[1] - tileCoord2[1]));
 }
 
-const k = 10.0;
+const k = 18 * Settings.groundTextureSize / 4096;
 const ROAD_WIDTHS = {
   living_street: 1*k,
   secondary: 1*k,
@@ -165,6 +165,7 @@ class LandManager {
 
 
     landTileDetails.roadFeatures.forEach(roadFeature => {
+      this.textureCanvas.strokeStyle(Settings.roadColor);
       const width = roadFeature.properties.type in ROAD_WIDTHS ? ROAD_WIDTHS[roadFeature.properties.type] : 1;
       if (roadFeature.geometry.type == 'LineString') {
         this.drawLineStringFeature(roadFeature.geometry.coordinates, width);
@@ -180,7 +181,6 @@ class LandManager {
     const lonLatDegreesArray = coordinates.map(lonLatDegrees => new THREE.Vector2(lonLatDegrees[0], lonLatDegrees[1]));
     const sceneCoordsArray = lonLatDegreesArray.map(lonLatDegrees => this.app.coords.lonLatDegreesToSceneCoords(lonLatDegrees));
     this.textureCanvas.lineWidth(width);
-    this.textureCanvas.strokeStyle(Settings.roadColor);
     this.textureCanvas.beginPath();
     this.textureCanvas.moveTo(sceneCoordsArray[0].x, sceneCoordsArray[0].y);
     for (let i = 1; i < sceneCoordsArray.length; ++i) {
