@@ -62,5 +62,21 @@ Util.setOptionFromUrlParams = (options, params, name, parse) => {
   }
 };
 
+class LinearInterpolator {
+  constructor(a,b,A,B) {
+    // maps [a,b] to [A,B]
+    this.a = a;
+    this.b = b;
+    this.A = A;
+    this.B = B;
+    this.f = (this.B - this.A)/(this.b - this.a);
+  }
+  interpolate(x) {
+    return (x - this.a)*this.f + this.A;
+  }
+  scale(x) { return x*this.f; }
+}
+
+Util.LinearInterpolator = LinearInterpolator;
 
 export {Util};
