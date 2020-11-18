@@ -97,7 +97,7 @@ let Settings = {
 
   'pitchRange': {
     'street': {
-      'min': -1.56,
+      'min': -0.4,
       'max':  1.56
     },
     'bird': {
