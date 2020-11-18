@@ -95,6 +95,17 @@ let Settings = {
     'bird': 200
   },
 
+  'pitchRange': {
+    'street': {
+      'min': -1.56,
+      'max':  1.56
+    },
+    'bird': {
+      'min': -1.56,
+      'max': -0.53
+    },
+  },
+
   'waterColor': 'rgb(174, 202, 255)', // "#aecaff"
 
   // antique = rgb(235, 232, 211)
