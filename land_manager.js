@@ -1,5 +1,6 @@
 import {Coords} from "./coords.js";
 import {Settings} from "./settings.js";
+import {Util} from "./util.js";
 
 /**
  * @param lonLatDegrees (THREE.Vector2) lon [x] and lat [y] in degrees
@@ -23,19 +24,13 @@ function wrap(v, n) {
   return (n - (-v % n)) % n;
 }
 
-function clamp(v, n) {
-  if (v <= 0) { return 0; }
-  if (v >= n-1) { return n-1; }
-  return v;
-}
-
 function tileCoordsInRadius(tileCoord, radius) {
   const z = tileCoord[2];
   const tiles = [];
   for (let dx = -radius; dx <= radius; ++dx) {
     const x = wrap(tileCoord[0] + dx, 2**z);
     for (let dy = -radius; dy <= radius; ++dy) {
-      const y = clamp(tileCoord[1] + dy, 2**z);
+      const y = Util.clamp(tileCoord[1] + dy, 0, 2**z-1);
       tiles.push([x,y,z]);
     }
   }

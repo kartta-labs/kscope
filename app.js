@@ -116,6 +116,9 @@ class App {
         const yangle = 0.25 * (t.x / this.container.offsetWidth) * Math.PI;
 
         this.cameraXAngle += xangle;
+        this.cameraXAngle = Util.clamp(this.cameraXAngle,
+                                       Settings.pitchRange[this.level].min,
+                                       Settings.pitchRange[this.level].max);
         this.cameraYAngle += yangle;
         this.updateCamera();
       } else {
@@ -133,6 +136,9 @@ class App {
         const yangle = (dp.x / this.container.offsetWidth) * Math.PI;
 
         this.cameraXAngle += xangle;
+        this.cameraXAngle = Util.clamp(this.cameraXAngle,
+                                       Settings.pitchRange[this.level].min,
+                                       Settings.pitchRange[this.level].max);
         this.cameraYAngle += yangle;
         this.updateCamera();
     }).setMouseWheelListener(e => {

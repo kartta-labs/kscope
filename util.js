@@ -62,6 +62,10 @@ Util.setOptionFromUrlParams = (options, params, name, parse) => {
   }
 };
 
+Util.clamp = (v,vmin,vmax) => {
+  return (v <= vmin) ? vmin : ((v >= vmax) ? vmax : v);
+}
+
 class LinearInterpolator {
   constructor(a,b,A,B) {
     // maps [a,b] to [A,B]
