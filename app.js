@@ -66,9 +66,12 @@ class App {
     this.initialCameraY = Settings.eyeHeight[this.level];
     this.initialCameraZ = initialCameraSceneCoords.y;
 
+    this.raycaster = new THREE.Raycaster();
+
     this.tiler = new Tiler(this.tilesize, this.coords);
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
+
     this.renderer.setClearColor( 0x6666ff, 1 );
     this.container.appendChild( this.renderer.domElement );
     this.eventTracker = new EventTracker(this.container);
@@ -98,7 +101,7 @@ class App {
 
     this.eventTracker.setMouseDownListener(e => {
       if (e.button == 2) {
-        // noop
+        this.highlightFeatureUnderMouse(e);
       }
     }).setTouchStartListener(p => {
     }).setTouchMoveListener((p,dp) => {
@@ -171,27 +174,51 @@ class App {
     return start_date <= year && year < end_date;
   }
 
-  screenToGroundSceneCoords(pScreen) {
-    const pViewport = this.screenToViewportCoords(pScreen);
-        const pWorld = new THREE.Vector3( pViewport.x, pViewport.y, -1 ).unproject( this.camera );
-        const cWorld = new THREE.Vector3(this.cameraX, this.cameraY, this.cameraZ);
-        const s = cWorld.y / (cWorld.y - pWorld.y);
-        const g = new THREE.Vector3(cWorld.x + s * (pWorld.x - cWorld.x), 0, cWorld.z + s * (pWorld.z - cWorld.z));
-    return g;
+  highlightFeatureUnderMouse(e) {
+    const viewportMouse = this.mouseToViewportCoords(e);
+    this.raycaster.setFromCamera(viewportMouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    console.log('found ' + intersects.length + ' intersections');
+    if (intersects.length > 0 && intersects[0].object.feature) {
+      console.log('first one:', intersects[0].object.feature);
+      const properties = intersects[0].object.feature.properties;
+      Object.keys(properties).forEach(key => {
+        console.log(key + ': ' + properties[key]);
+      });
+
+      this.outlinePass.selectedObjects = [ intersects[0].object ];
+      this.requestRender();
+    }
   }
 
-  screenToViewportCoords(screenPoint) {
+  mouseToViewportCoords(mouse) {
     return new THREE.Vector2(
-      (2 * screenPoint.x)/this.container.offsetWidth - 1,
-      1 - (2 * screenPoint.y)/this.container.offsetHeight
-    );
+        (mouse.x / this.container.offsetWidth) * 2 - 1,
+        1 - ((mouse.y-this.container.offsetTop) / this.container.offsetHeight) * 2);
   }
+
+  //screenToGroundSceneCoords(pScreen) {
+  //  const pViewport = this.screenToViewportCoords(pScreen);
+  //      const pWorld = new THREE.Vector3( pViewport.x, pViewport.y, -1 ).unproject( this.camera );
+  //      const cWorld = new THREE.Vector3(this.cameraX, this.cameraY, this.cameraZ);
+  //      const s = cWorld.y / (cWorld.y - pWorld.y);
+  //      const g = new THREE.Vector3(cWorld.x + s * (pWorld.x - cWorld.x), 0, cWorld.z + s * (pWorld.z - cWorld.z));
+  //  return g;
+  //}
+  //
+  //screenToViewportCoords(screenPoint) {
+  //  return new THREE.Vector2(
+  //    (2 * screenPoint.x)/this.container.offsetWidth - 1,
+  //    1 - (2 * screenPoint.y)/this.container.offsetHeight
+  //  );
+  //}
 
   /*
    * Adjust to a new container size.  Call this e.g. when the browser window size changes.
    */
   resize() {
     this.renderer.setSize( this.container.offsetWidth, this.container.offsetHeight );
+    this.composer.setSize( this.container.offsetWidth, this.container.offsetHeight );
     this.camera.aspect = this.container.offsetWidth / this.container.offsetHeight;
     this.camera.updateProjectionMatrix();
     this.requestRender();
@@ -515,6 +542,15 @@ class App {
 
     this.scene.add(this.camera);
 
+    this.composer = new THREE.EffectComposer(this.renderer);
+    this.renderPass = new THREE.RenderPass(this.scene, this.camera);
+    this.composer.addPass(this.renderPass);
+    this.outlinePass = new THREE.OutlinePass(new THREE.Vector2(this.container.offsetWidth, this.container.offsetHeight), this.scene, this.camera);
+    this.outlinePass.edgeStrength = 5.0;
+    this.outlinePass.edgeGlow = 0.5;
+    this.outlinePass.edgeThickness = 2.0;
+    this.composer.addPass(this.outlinePass);
+
     if (this.debug) {
       this.axes = Axes.axes3D({
         length: 50,
@@ -553,6 +589,13 @@ class App {
             if (doneFunc) { doneFunc(); }
           })
           .catch(e => console.log(e));
+  }
+
+  recursiveSetProperty(object, property, value) {
+    object[property] = value;
+    for (let i = 0; i < object.children.length; ++i) {
+      this.recursiveSetProperty(object.children[i], property, value);
+    }
   }
 
 
@@ -613,6 +656,7 @@ class App {
         console.log('feature is not supported for rendering.');
       }
       if (extrusion != null) {
+        this.recursiveSetProperty(extrusion, 'feature', features[i]);
         this.featureIdToObjectDetails[features[i].properties.id] = {
           bBoxString: tileDetails.tile.getBBoxString(),
           properties: features[i].properties,
@@ -756,6 +800,7 @@ class App {
     object3D.position.z = baseSceneCoords.y;
     tileDetails.object3D.remove(this.featureIdToObjectDetails[feature.properties.id].object3D);
     object3D.visible = App.featureVisibleInYear(feature, this.year);
+    this.recursiveSetProperty(object3D, 'feature', feature);
     tileDetails.object3D.add(object3D);
     this.featureIdToObjectDetails[feature.properties.id].object3D = object3D;
     this.requestRender();
@@ -772,7 +817,8 @@ class App {
     this.renderRequested = true;
     requestAnimationFrame(() => {
       this.renderRequested = false;
-      this.renderer.render( this.scene, this.camera );
+//      this.renderer.render( this.scene, this.camera );
+this.composer.render();
       //console.log([window.performance.memory.totalJSHeapSize, window.performance.memory.usedJSHeapSize]);
     });
   }
