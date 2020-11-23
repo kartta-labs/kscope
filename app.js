@@ -197,13 +197,39 @@ class App {
     this.infoDetailsDisplayed = false;
   }
 
+  /*
+   * Computes the centroid of a geojson object, given its coordinate array.
+   * The coordinate array can have any level of nesting -- returns the centroid
+   * of all the [lon,lat] pairs at any level in the nested array.
+   */
+   geojsonCoordinateCentroid(coordinates) {
+    let count = 0;
+    const sum = [0, 0];
+    const stack = [ coordinates ];
+    while (stack.length > 0) {
+      const top = stack.shift(1);
+      if (top.length == 2 && typeof(top[0]) == "number" && typeof(top[1]) == "number") {
+        count += 1;
+        sum[0] += top[0];
+        sum[1] += top[1];
+      } else {
+        top.forEach(entry => {
+          stack.push(entry);
+        });
+      }
+    }
+    return [sum[0]/count, sum[1]/count];
+  }
+
   displayInfoDetailsForHighlightedFeature() {
     if (!this.highlightedFeature) {
       return;
     }
     this.infoDetailsContent.innerHTML = "";
     const words = [];
+
     const properties = this.highlightedFeature.properties;
+    const centroid = this.geojsonCoordinateCentroid(this.highlightedFeature.geometry.coordinates);
     words.push("<table>");
     Object.keys(properties).forEach(key => {
       words.push("<tr>");
@@ -215,6 +241,13 @@ class App {
       words.push("</td>");
       words.push("</tr>");
     });
+    words.push('<tr><td colspan="2">');
+    words.push('<a href="/e/edit#map=20/');
+    words.push(centroid[1]);
+    words.push('/');
+    words.push(centroid[0]);
+    words.push('">Edit this feature</a>');
+    words.push('</td></tr>');
     words.push("</table>");
     this.infoDetailsContent.innerHTML = words.join("");
     this.infoDetails.classList.remove("hidden");
