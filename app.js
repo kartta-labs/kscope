@@ -41,6 +41,8 @@ class App {
     const defaultCameraSceneZ = ('eyez' in options) ? options['eyez'] : Settings.eyez;
 
     this.fetchQueue = new FetchQueue(400);
+    this.infoMode = false;
+    this.setInfoButtonState = null;
 
     this.renderRequested = false;
     this.container = container;
@@ -103,6 +105,10 @@ class App {
       if (e.button == 2) {
         this.highlightFeatureUnderMouse(e);
       }
+    }).setMouseMoveListener(e => {
+      if (this.infoMode) {
+        this.highlightFeatureUnderMouse(e);
+      }
     }).setTouchStartListener(p => {
     }).setTouchMoveListener((p,dp) => {
       if (p.length >= 2) {
@@ -158,6 +164,10 @@ class App {
       }
     }).setKeyUpListener(e => {
       // noop
+    }).setKeyDownListener(e => {
+      if (e.key == 'Escape') {
+        this.setInfoMode(false);
+      }
     });
     this.eventTracker.start();
   }
@@ -174,27 +184,42 @@ class App {
     return start_date <= year && year < end_date;
   }
 
+  getInfoMode() {
+    return this.infoMode;
+  }
+
+  infoButtonStateSetter(setInfoButtonState) {
+    this.setInfoButtonState = setInfoButtonState;
+  }
+
+  setInfoMode(infoMode) {
+    this.infoMode = infoMode;
+    this.outlinePass.selectedObjects = [];
+    if (this.setInfoButtonState) { this.setInfoButtonState(infoMode); }
+    this.requestRender();
+  }
+
   highlightFeatureUnderMouse(e) {
+    this.outlinePass.selectedObjects = [];
     const viewportMouse = this.mouseToViewportCoords(e);
     this.raycaster.setFromCamera(viewportMouse, this.camera);
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    console.log('found ' + intersects.length + ' intersections');
     if (intersects.length > 0 && intersects[0].object.feature) {
-      console.log('first one:', intersects[0].object.feature);
-      const properties = intersects[0].object.feature.properties;
-      Object.keys(properties).forEach(key => {
-        console.log(key + ': ' + properties[key]);
-      });
+//      console.log('first one:', intersects[0].object.feature);
+//      const properties = intersects[0].object.feature.properties;
+//      Object.keys(properties).forEach(key => {
+//        console.log(key + ': ' + properties[key]);
+//      });
 
       this.outlinePass.selectedObjects = [ intersects[0].object ];
-      this.requestRender();
     }
+    this.requestRender();
   }
 
   mouseToViewportCoords(mouse) {
     return new THREE.Vector2(
         (mouse.x / this.container.offsetWidth) * 2 - 1,
-        1 - ((mouse.y-this.container.offsetTop) / this.container.offsetHeight) * 2);
+        1 - (mouse.y / this.container.offsetHeight) * 2);
   }
 
   //screenToGroundSceneCoords(pScreen) {

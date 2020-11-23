@@ -119,3 +119,24 @@ img.eyelevel-button:hover {
 .eyelevel-img-hidden {
   display: none;
 }
+
+img.info-button {
+  position: absolute;
+  top: 45px;
+  right: 10px;
+  width: 30px; /* height will adjust accordingly */
+  border-radius: 5px;
+  border: 1px solid #333333;
+  background-color: #ffffff;
+  margin: 2px;
+}
+
+img.info-button:hover {
+  background-color: #aaaaaa;
+  border: 3px solid black;
+}
+
+img.info-button.pressed {
+  background-color: #cccccc;
+  border: 4px solid black;
+}

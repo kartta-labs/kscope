@@ -26,6 +26,7 @@ class EventTracker {
     this.mouseWheelListener = null;
     this.keyPressListener = null;
     this.keyUpListener = null;
+    this.keyDownListener = null;
     this.lastTouchP = null;
 
     this.specialKeys = {
@@ -68,8 +69,6 @@ class EventTracker {
       if (this.mouseDownListener) {
         this.mouseDownListener(this.lastP);
       }
-      window.addEventListener('mousemove', this.mouseMove);
-      window.addEventListener('mouseup', this.mouseUp);
     };
 
     this.mouseMove = (event) => {
@@ -82,6 +81,10 @@ class EventTracker {
         }
         this.lastP = p;
         this.lastTime = t;
+      } else {
+        if (this.mouseMoveListener) {
+          this.mouseMoveListener(p, event.button);
+        }
       }
     };
 
@@ -94,8 +97,6 @@ class EventTracker {
       }
       this.lastP = p;
       this.lastTime = t;
-      window.removeEventListener('mousemove', this.mouseMove);
-      window.removeEventListener('mouseup', this.mouseUp);
     };
 
     this.mouseWheel = (event) => {
@@ -114,11 +115,15 @@ class EventTracker {
     };
 
     this.keyPress = (event) => {
-      if (!(event.key in this.specialKeys) && this.keyPressListener) { this.keyPressListener(event); }
+      if (this.keyPressListener) { this.keyPressListener(event); }
     };
 
     this.keyUp = (event) => {
-      if (!(event.key in this.specialKeys) && this.keyUpListener) { this.keyUpListener(event); }
+      if (this.keyUpListener) { this.keyUpListener(event); }
+    };
+
+    this.keyDown = (event) => {
+      if (this.keyDownListener) { this.keyDownListener(event); }
     };
 
   }
@@ -133,6 +138,10 @@ class EventTracker {
   }
   setMouseDownListener(listener) {
     this.mouseDownListener = listener;
+    return this;
+  }
+  setMouseMoveListener(listener) {
+    this.mouseMoveListener = listener;
     return this;
   }
   setMouseDragListener(listener) {
@@ -155,6 +164,10 @@ class EventTracker {
     this.keyUpListener = listener;
     return this;
   }
+  setKeyDownListener(listener) {
+    this.keyDownListener = listener;
+    return this;
+  }
 
   relCoords(event) {
     return { x : event.pageX - this.dom_element.offsetLeft,
@@ -173,8 +186,11 @@ class EventTracker {
   start() {
     window.addEventListener( 'keypress',   this.keyPress,  false );
     window.addEventListener( 'keyup',      this.keyUp,     false );
+    window.addEventListener( 'keydown',    this.keyDown,   false );
     this.dom_element.addEventListener( 'mousedown',  this.mouseDown,  false );
     this.dom_element.addEventListener( 'mousewheel', this.mouseWheel, false );
+    this.dom_element.addEventListener( 'mousemove', this.mouseMove, false);
+    this.dom_element.addEventListener( 'mouseup', this.mouseUp, false);
     this.dom_element.addEventListener( 'touchstart', this.touchStart, false );
     this.dom_element.addEventListener( 'touchmove', this.touchMove, false );
     this.dom_element.addEventListener( 'contextmenu', (e) => {

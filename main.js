@@ -83,6 +83,21 @@ window.addEventListener('load', () => {
   streetLevelImg.ontouchstart = handleEyeLevelButtonClick;
   birdLevelImg.ontouchstart = handleEyeLevelButtonClick;
 
+
+  const /** !Element */ infoImg = document.getElementById('info-img');
+  function setInfoButtonState(infoMode) {
+    if (infoMode) {
+      infoImg.classList.add("pressed");
+    } else {
+      infoImg.classList.remove("pressed");
+    }
+  }
+  app.infoButtonStateSetter(setInfoButtonState);
+  function handleInfoButtonClick(e) {
+    app.setInfoMode(!app.getInfoMode());
+  }
+  infoImg.onclick = handleInfoButtonClick;
+
   window.onresize = () => {
     app.resize();
   }
