@@ -80,6 +80,8 @@ class App {
     this.eventTracker = new EventTracker(this.container);
     this.infoDetails = document.getElementById("info-details");
     this.infoDetailsContent = document.getElementById("info-details-content");
+    this.infoDetailsClose = document.getElementById("info-details-close");
+    this.infoDetailsDisplayed = false;
 
     // map whose keys are bbox strings, value is an object giving details about the corresponding data tile
     this.bBoxStringToSceneTileDetails = {
@@ -108,7 +110,7 @@ class App {
         this.displayInfoDetailsForHighlightedFeature();
       }
     }).setMouseMoveListener(e => {
-      if (this.infoMode) {
+      if (this.infoMode && !this.infoDetailsDisplayed) {
         this.highlightFeatureUnderMouse(e);
       }
     }).setTouchStartListener(p => {
@@ -168,7 +170,11 @@ class App {
       // noop
     }).setKeyDownListener(e => {
       if (e.key == 'Escape') {
-        this.setInfoMode(false);
+        if (this.infoDetailsDisplayed) {
+          this.hideInfoDetails();
+        } else {
+          this.setInfoMode(false);
+        }
       }
     });
     this.eventTracker.start();
@@ -184,6 +190,11 @@ class App {
       ? parseInt(feature.properties['end_date'])
       : 10000;
     return start_date <= year && year < end_date;
+  }
+
+  hideInfoDetails() {
+    this.infoDetails.classList.add("hidden");
+    this.infoDetailsDisplayed = false;
   }
 
   displayInfoDetailsForHighlightedFeature() {
@@ -207,7 +218,10 @@ class App {
     words.push("</table>");
     this.infoDetailsContent.innerHTML = words.join("");
     this.infoDetails.classList.remove("hidden");
+    this.infoDetailsClose.onclick = () => { this.hideInfoDetails(); }
+    this.infoDetailsDisplayed = true;
   }
+
 
   getInfoMode() {
     return this.infoMode;
@@ -222,6 +236,7 @@ class App {
     this.outlinePass.selectedObjects = [];
     if (!infoMode) {
       this.highlightedFeature = null;
+      this.hideInfoDetails();
     }
     if (this.setInfoButtonState) { this.setInfoButtonState(infoMode); }
     this.requestRender();
