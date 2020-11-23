@@ -43,6 +43,7 @@ class App {
     this.fetchQueue = new FetchQueue(400);
     this.infoMode = false;
     this.setInfoButtonState = null;
+    this.highlightedFeature = null;
 
     this.renderRequested = false;
     this.container = container;
@@ -77,7 +78,8 @@ class App {
     this.renderer.setClearColor( 0x6666ff, 1 );
     this.container.appendChild( this.renderer.domElement );
     this.eventTracker = new EventTracker(this.container);
-
+    this.infoDetails = document.getElementById("info-details");
+    this.infoDetailsContent = document.getElementById("info-details-content");
 
     // map whose keys are bbox strings, value is an object giving details about the corresponding data tile
     this.bBoxStringToSceneTileDetails = {
@@ -102,8 +104,8 @@ class App {
     this.scene.add(this.center);
 
     this.eventTracker.setMouseDownListener(e => {
-      if (e.button == 2) {
-        this.highlightFeatureUnderMouse(e);
+      if (this.infoMode) {
+        this.displayInfoDetailsForHighlightedFeature();
       }
     }).setMouseMoveListener(e => {
       if (this.infoMode) {
@@ -184,6 +186,29 @@ class App {
     return start_date <= year && year < end_date;
   }
 
+  displayInfoDetailsForHighlightedFeature() {
+    if (!this.highlightedFeature) {
+      return;
+    }
+    this.infoDetailsContent.innerHTML = "";
+    const words = [];
+    const properties = this.highlightedFeature.properties;
+    words.push("<table>");
+    Object.keys(properties).forEach(key => {
+      words.push("<tr>");
+      words.push("<td>");
+      words.push(key);
+      words.push("</td>");
+      words.push("<td>");
+      words.push(properties[key]);
+      words.push("</td>");
+      words.push("</tr>");
+    });
+    words.push("</table>");
+    this.infoDetailsContent.innerHTML = words.join("");
+    this.infoDetails.classList.remove("hidden");
+  }
+
   getInfoMode() {
     return this.infoMode;
   }
@@ -195,6 +220,9 @@ class App {
   setInfoMode(infoMode) {
     this.infoMode = infoMode;
     this.outlinePass.selectedObjects = [];
+    if (!infoMode) {
+      this.highlightedFeature = null;
+    }
     if (this.setInfoButtonState) { this.setInfoButtonState(infoMode); }
     this.requestRender();
   }
@@ -205,12 +233,7 @@ class App {
     this.raycaster.setFromCamera(viewportMouse, this.camera);
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
     if (intersects.length > 0 && intersects[0].object.feature) {
-//      console.log('first one:', intersects[0].object.feature);
-//      const properties = intersects[0].object.feature.properties;
-//      Object.keys(properties).forEach(key => {
-//        console.log(key + ': ' + properties[key]);
-//      });
-
+      this.highlightedFeature = intersects[0].object.feature;
       this.outlinePass.selectedObjects = [ intersects[0].object ];
     }
     this.requestRender();
@@ -221,22 +244,6 @@ class App {
         (mouse.x / this.container.offsetWidth) * 2 - 1,
         1 - (mouse.y / this.container.offsetHeight) * 2);
   }
-
-  //screenToGroundSceneCoords(pScreen) {
-  //  const pViewport = this.screenToViewportCoords(pScreen);
-  //      const pWorld = new THREE.Vector3( pViewport.x, pViewport.y, -1 ).unproject( this.camera );
-  //      const cWorld = new THREE.Vector3(this.cameraX, this.cameraY, this.cameraZ);
-  //      const s = cWorld.y / (cWorld.y - pWorld.y);
-  //      const g = new THREE.Vector3(cWorld.x + s * (pWorld.x - cWorld.x), 0, cWorld.z + s * (pWorld.z - cWorld.z));
-  //  return g;
-  //}
-  //
-  //screenToViewportCoords(screenPoint) {
-  //  return new THREE.Vector2(
-  //    (2 * screenPoint.x)/this.container.offsetWidth - 1,
-  //    1 - (2 * screenPoint.y)/this.container.offsetHeight
-  //  );
-  //}
 
   /*
    * Adjust to a new container size.  Call this e.g. when the browser window size changes.

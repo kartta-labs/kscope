@@ -140,3 +140,51 @@ img.info-button.pressed {
   background-color: #cccccc;
   border: 4px solid black;
 }
+
+div#info-details {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  background-color: #ffffff;
+  border-radius: 5px;
+  opacity: 0.9;
+}
+
+div#info-details.hidden {
+  display: none;
+}
+
+#info-details-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  opacity: 0.3;
+}
+#info-details-close:hover {
+  opacity: 1;
+}
+#info-details-close:before, #info-details-close:after {
+  position: absolute;
+  left: 15px;
+  content: ' ';
+  height: 25px;
+  width: 2px;
+  background-color: #333;
+}
+#info-details-close:before {
+  transform: rotate(45deg);
+}
+#info-details-close:after {
+  transform: rotate(-45deg);
+}
+#info-details-content table {
+  border-collapse: collapse;
+  margin: 10px;
+  margin-right: 40px;
+}
+#info-details-content td {
+  border: 1px solid black;
+  padding: 5px;
+}
