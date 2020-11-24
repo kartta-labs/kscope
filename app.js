@@ -242,7 +242,7 @@ class App {
       words.push("</tr>");
     });
     words.push('<tr><td colspan="2">');
-    words.push('<a href="/e/edit#map=20/');
+    words.push('<a href="/e/edit#map=21/');
     words.push(centroid[1]);
     words.push('/');
     words.push(centroid[0]);
