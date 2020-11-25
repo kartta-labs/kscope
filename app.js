@@ -242,10 +242,14 @@ class App {
       words.push("</tr>");
     });
     words.push('<tr><td colspan="2">');
-    words.push('<a href="/e/edit#map=21/');
+    words.push('<a href="/e/edit#map=22/');
     words.push(centroid[1]);
     words.push('/');
     words.push(centroid[0]);
+    words.push('&disable_features=date_range,boundaries&end_date=');
+    words.push(this.year);
+    words.push('&start_date=');
+    words.push(this.year);
     words.push('">Edit this feature</a>');
     words.push('</td></tr>');
     words.push("</table>");
