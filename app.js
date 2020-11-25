@@ -42,6 +42,8 @@ class App {
 
     this.fetchQueue = new FetchQueue(400);
     this.infoMode = false;
+
+    this.setEyeLevelButtonState = null;
     this.setInfoButtonState = null;
     this.highlightedFeature = null;
 
@@ -271,6 +273,9 @@ class App {
     this.infoDetailsDisplayed = true;
   }
 
+  eyeLevelButtonStateSetter(setEyeLevelButtonState) {
+    this.setEyeLevelButtonState = setEyeLevelButtonState;
+  }
 
   getInfoMode() {
     return this.infoMode;
@@ -342,7 +347,14 @@ class App {
     this.cameraXAngle = Settings.initialPitch[level];
     this.updateCamera();
     Util.updatePageUrl({level: level});
+    if (this.setEyeLevelButtonState) {
+      this.setEyeLevelButtonState(level);
+    }
     this.requestRender();
+  }
+
+  getLevel() {
+    return this.level;
   }
 
   speedForCameraHeight() {
@@ -587,6 +599,7 @@ class App {
    * and requests a render.
    */
   updateCamera() {
+    if (!this.camera) { return; }
 
     this.camera.matrix.identity();
 

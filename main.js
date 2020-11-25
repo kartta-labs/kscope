@@ -55,8 +55,7 @@ window.addEventListener('load', () => {
   const /** !Element */ eyeLevelButton = document.getElementById('eyelevel-button');
   const /** !Element */ streetLevelImg = document.getElementById('street-level-img');
   const /** !Element */ birdLevelImg = document.getElementById('bird-level-img');
-
-  function updateEyeLevelButtonState(level) {
+  app.eyeLevelButtonStateSetter(level => {
     if (level == 'street') {
       birdLevelImg.classList.add('eyelevel-img-hidden');
       streetLevelImg.classList.remove('eyelevel-img-hidden');
@@ -64,35 +63,26 @@ window.addEventListener('load', () => {
       birdLevelImg.classList.remove('eyelevel-img-hidden');
       streetLevelImg.classList.add('eyelevel-img-hidden');
     }
-  }
-
-  let currentLevel = level;
-  updateEyeLevelButtonState(level);
+  });
+  app.setLevel(level);
 
   function handleEyeLevelButtonClick(e) {
-    if (currentLevel == 'street') {
-      currentLevel = 'bird';
-    } else {
-      currentLevel = 'street';
-    }
-    updateEyeLevelButtonState(currentLevel);
-    app.setLevel(currentLevel);
+    app.setLevel( app.getLevel() == "bird" ? "street" : "bird" );
   }
   streetLevelImg.onclick = handleEyeLevelButtonClick;
   birdLevelImg.onclick = handleEyeLevelButtonClick;
   streetLevelImg.ontouchstart = handleEyeLevelButtonClick;
   birdLevelImg.ontouchstart = handleEyeLevelButtonClick;
 
-
   const /** !Element */ infoImg = document.getElementById('info-img');
-  function setInfoButtonState(infoMode) {
+  app.infoButtonStateSetter(infoMode => {
     if (infoMode) {
       infoImg.classList.add("pressed");
     } else {
       infoImg.classList.remove("pressed");
     }
-  }
-  app.infoButtonStateSetter(setInfoButtonState);
+  });
+
   function handleInfoButtonClick(e) {
     app.setInfoMode(!app.getInfoMode());
   }
