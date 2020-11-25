@@ -165,10 +165,14 @@ class App {
         this.walkCamera(this.speedForCameraHeight(), /* sideways= */true);
       } else if (e.key == 'd') {
         this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
+      } else if (e.key == 'i') {
+          this.setInfoMode(!this.infoMode);
       }
     }).setKeyUpListener(e => {
       // noop
     }).setKeyDownListener(e => {
+      // Note Escape (and some other special keys) doesn't trigger a keypress event, so we have to listen
+      // for it with keydown.
       if (e.key == 'Escape') {
         if (this.infoDetailsDisplayed) {
           this.hideInfoDetails();
