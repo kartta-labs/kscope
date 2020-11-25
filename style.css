@@ -63,6 +63,10 @@ header {
   position: relative;
 }
 
+#viewport.crosshair-cursor {
+  cursor: crosshair !important;
+}
+
 /* The slider itself */
 .slider {
   clear: both;
