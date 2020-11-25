@@ -84,7 +84,7 @@ window.addEventListener('load', () => {
   });
 
   function handleInfoButtonClick(e) {
-    app.setInfoMode(!app.getInfoMode());
+    app.setMode(app.getMode() == "info" ? "normal" : "info");
   }
   infoImg.onclick = handleInfoButtonClick;
 

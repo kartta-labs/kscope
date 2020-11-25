@@ -41,7 +41,7 @@ class App {
     const defaultCameraSceneZ = ('eyez' in options) ? options['eyez'] : Settings.eyez;
 
     this.fetchQueue = new FetchQueue(400);
-    this.infoMode = false;
+    this.mode = "normal";
 
     this.setEyeLevelButtonState = null;
     this.setInfoButtonState = null;
@@ -108,11 +108,11 @@ class App {
     this.scene.add(this.center);
 
     this.eventTracker.setMouseDownListener(e => {
-      if (this.infoMode) {
+      if (this.mode == "info") {
         this.displayInfoDetailsForHighlightedFeature();
       }
     }).setMouseMoveListener(e => {
-      if (this.infoMode && !this.infoDetailsDisplayed) {
+      if (this.mode == "info" && !this.infoDetailsDisplayed) {
         this.highlightFeatureUnderMouse(e);
       }
     }).setTouchStartListener(p => {
@@ -168,7 +168,7 @@ class App {
       } else if (e.key == 'd') {
         this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
       } else if (e.key == 'i') {
-          this.setInfoMode(!this.infoMode);
+         this.setMode(this.mode == "info" ? "normal" : "info");
       }
     }).setKeyUpListener(e => {
       // noop
@@ -187,7 +187,7 @@ class App {
         if (this.infoDetailsDisplayed) {
           this.hideInfoDetails();
         } else {
-          this.setInfoMode(false);
+          this.setMode("normal");
         }
       }
     });
@@ -277,22 +277,26 @@ class App {
     this.setEyeLevelButtonState = setEyeLevelButtonState;
   }
 
-  getInfoMode() {
-    return this.infoMode;
-  }
-
   infoButtonStateSetter(setInfoButtonState) {
     this.setInfoButtonState = setInfoButtonState;
   }
 
-  setInfoMode(infoMode) {
-    this.infoMode = infoMode;
-    this.outlinePass.selectedObjects = [];
-    if (!infoMode) {
+  getMode() {
+    return this.mode;
+  }
+
+  setMode(mode) {
+    if (mode != "info") {
+      this.outlinePass.selectedObjects = [];
       this.highlightedFeature = null;
       this.hideInfoDetails();
     }
-    if (this.setInfoButtonState) { this.setInfoButtonState(infoMode); }
+    this.mode = mode;
+    if (mode == "info") {
+      if (this.setInfoButtonState) { this.setInfoButtonState(true); }
+    } else /* if (mode == "normal") */ {
+      if (this.setInfoButtonState) { this.setInfoButtonState(false); }
+    }
     this.requestRender();
   }
 
