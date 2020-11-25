@@ -127,17 +127,17 @@ img.info-button {
   width: 30px; /* height will adjust accordingly */
   border-radius: 5px;
   border: 1px solid #333333;
-  background-color: #ffffff;
+  background-color: #d5d5d5;
   margin: 2px;
 }
 
 img.info-button:hover {
   background-color: #aaaaaa;
-  border: 3px solid black;
+  border: 3px solid blue;
 }
 
 img.info-button.pressed {
-  background-color: #cccccc;
+  background-color: #999999;
   border: 4px solid black;
 }
 
