@@ -165,11 +165,23 @@ class App {
         this.walkCamera(this.speedForCameraHeight(), /* sideways= */true);
       } else if (e.key == 'd') {
         this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
+      } else if (e.key == 'i') {
+          this.setInfoMode(!this.infoMode);
       }
     }).setKeyUpListener(e => {
       // noop
     }).setKeyDownListener(e => {
-      if (e.key == 'Escape') {
+      // Note these keys (and some other special keys) doesn't trigger a keypress event, so we have to listen
+      // for them with keydown instead
+      if (e.key == 'ArrowUp') {
+        this.walkCamera(this.speedForCameraHeight());
+      } else if (e.key == 'ArrowDown') {
+        this.walkCamera(-this.speedForCameraHeight());
+      } else if (e.key == 'ArrowLeft') {
+        this.walkCamera(this.speedForCameraHeight(), /* sideways= */true);
+      } else if (e.key == 'ArrowRight') {
+        this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
+      } else if (e.key == 'Escape') {
         if (this.infoDetailsDisplayed) {
           this.hideInfoDetails();
         } else {
