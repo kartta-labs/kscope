@@ -67,7 +67,11 @@ window.addEventListener('load', () => {
   app.setLevel(level);
 
   function handleEyeLevelButtonClick(e) {
-    app.setLevel( app.getLevel() == "bird" ? "street" : "bird" );
+    if (app.getLevel() == "street") {
+      app.setLevel("bird");
+    } else {
+      app.setMode("teleport");
+    }
   }
   streetLevelImg.onclick = handleEyeLevelButtonClick;
   birdLevelImg.onclick = handleEyeLevelButtonClick;

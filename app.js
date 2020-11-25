@@ -110,6 +110,24 @@ class App {
     this.eventTracker.setMouseDownListener(e => {
       if (this.mode == "info") {
         this.displayInfoDetailsForHighlightedFeature();
+      } else if (this.mode == "teleport") {
+        const viewportMouse = this.mouseToViewportCoords(e);
+        this.raycaster.setFromCamera(viewportMouse, this.camera);
+        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+        for (let i = 0; i < intersects.length; ++i) {
+          if (intersects[i].object.name == "ground") {
+            const dx = this.cameraX - intersects[i].point.x;
+            const dz = this.cameraZ - intersects[i].point.z;
+            const d2 = dx*dx + dz*dz;
+            if (d2 <= 1500000) {
+              this.cameraX = intersects[i].point.x;
+              this.cameraZ = intersects[i].point.z;
+              this.setLevel("street");
+              this.setMode("normal");
+              break;
+            }
+          }
+        }
       }
     }).setMouseMoveListener(e => {
       if (this.mode == "info" && !this.infoDetailsDisplayed) {
@@ -291,9 +309,14 @@ class App {
       this.highlightedFeature = null;
       this.hideInfoDetails();
     }
+    if (mode != "teleport") {
+      this.container.classList.remove('crosshair-cursor');
+    }
     this.mode = mode;
     if (mode == "info") {
       if (this.setInfoButtonState) { this.setInfoButtonState(true); }
+    } else if (mode == "teleport") {
+      this.container.classList.add('crosshair-cursor');
     } else /* if (mode == "normal") */ {
       if (this.setInfoButtonState) { this.setInfoButtonState(false); }
     }
