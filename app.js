@@ -187,6 +187,17 @@ class App {
         this.walkCamera(-this.speedForCameraHeight(), /* sideways= */true);
       } else if (e.key == 'i') {
          this.setMode(this.mode == "info" ? "normal" : "info");
+      } else if (e.key == '1') {
+        if (this.level == "street") {
+          this.setLevel("bird");
+        } else {
+          if (this.mode == "teleport") {
+            this.setMode("normal");
+            this.setLevel("street");
+          } else {
+            this.setMode("teleport");
+          }
+        }
       }
     }).setKeyUpListener(e => {
       // noop
