@@ -184,9 +184,9 @@ class EventTracker {
   }
 
   start() {
-    window.addEventListener( 'keypress',   this.keyPress,  false );
-    window.addEventListener( 'keyup',      this.keyUp,     false );
-    window.addEventListener( 'keydown',    this.keyDown,   false );
+    this.dom_element.addEventListener( 'keypress',   this.keyPress,  false );
+    this.dom_element.addEventListener( 'keyup',      this.keyUp,     false );
+    this.dom_element.addEventListener( 'keydown',    this.keyDown,   false );
     this.dom_element.addEventListener( 'mousedown',  this.mouseDown,  false );
     this.dom_element.addEventListener( 'mousewheel', this.mouseWheel, false );
     this.dom_element.addEventListener( 'mousemove', this.mouseMove, false);
