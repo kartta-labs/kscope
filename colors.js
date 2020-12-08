@@ -146,4 +146,12 @@ for (let i=0; i<Colors.roof.length; ++i) {
   }
 }
 
+Colors.brighten = (color, amount) => {
+  return [
+    color[0] + amount * (1 - color[0]),
+    color[1] + amount * (1 - color[2]),
+    color[2] + amount * (1 - color[2])
+  ];
+}
+
 export {Colors};
