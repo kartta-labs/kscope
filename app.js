@@ -452,6 +452,7 @@ class App {
     const doorColor = blackColor;
     const storeFrontColor = Colors.chooseRandom("concrete", featureId + "storeFront");
     const roofColor = Colors.chooseRandom("roof", featureId + "roof");
+    const windowCasingFrameColor = Colors.brighten(storeFrontColor, 0.3);
 
     Object.keys(mtlCreator.materialsInfo).forEach(mtlName => {
       if (mtlName.startsWith("front") || mtlName.startsWith("default")) {
@@ -498,6 +499,9 @@ class App {
         mtlCreator.materialsInfo[mtlName].ks = [0.3, 0.3, 0.3];
         mtlCreator.materialsInfo[mtlName].ns = 10;
         mtlCreator.materialsInfo[mtlName].d = 0.85;
+      } else if (mtlName.startsWith("window")) { // windowcasing, windowframe
+        mtlCreator.materialsInfo[mtlName].ka = windowCasingFrameColor;
+        mtlCreator.materialsInfo[mtlName].kd = windowCasingFrameColor;
       }
     });
   }
