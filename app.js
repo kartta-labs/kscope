@@ -935,12 +935,17 @@ class App {
   }
 
   replaceExtrusionWithObject3D(feature, object3D, metadata, tileDetails) {
-    // If tag use_location="true", position by lon/lat from metadata.
-    // Otherwise position by first vertex in footprint.
-    let baseArray =
-            ("use_location" in metadata.tags && metadata.tags['use_location'].toLowerCase() == "true")
-            ? [metadata.location.longitude, metadata.location.latitude]
-            : feature.geometry.coordinates[0][0];
+    // If tag use_location="true", or if this feature appears in this.buildingReferencePoints,
+    // position by lon/lat from metadata. Otherwise position by first vertex in footprint.
+    let baseArray;
+    if ("use_location" in metadata.tags && metadata.tags['use_location'].toLowerCase() == "true") {
+      baseArray = [metadata.location.longitude, metadata.location.latitude];
+    } else if (feature.id in this.buildingReferencePoints) {
+      baseArray = this.buildingReferencePoints[feature.id];
+    } else {
+      baseArray = feature.geometry.coordinates[0][0];
+    }
+
     const baseSceneCoords = this.coords.lonLatDegreesToSceneCoords(new THREE.Vector2(baseArray[0], baseArray[1]));
     object3D.scale.set(
           Settings.buildingXZScaleShrinkFactor * metadata.scale,
@@ -984,7 +989,17 @@ this.composer.render();
     });
   }
 
+  // Temporary hack: load 3d reconstruction building reference points from json file.
   initialize() {
+    fetch("./BuildingReferencePoints.json")
+    .then(response => response.json())
+    .then(json => {
+      this.buildingReferencePoints = json;
+      this.initialize0();
+    });
+  }
+
+  initialize0() {
     // lights
     this.initializeLights();
 
@@ -996,6 +1011,7 @@ this.composer.render();
     this.requestRenderAfterEach(this.initializeSky());
     this.requestRender();
     this.refreshDataForNewCameraPosition();
+
   }
 }
 
