@@ -696,11 +696,19 @@ class App {
     this.composer = new THREE.EffectComposer(this.renderer);
     this.renderPass = new THREE.RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
+
     this.outlinePass = new THREE.OutlinePass(new THREE.Vector2(this.container.offsetWidth, this.container.offsetHeight), this.scene, this.camera);
     this.outlinePass.edgeStrength = 5.0;
     this.outlinePass.edgeGlow = 0.5;
     this.outlinePass.edgeThickness = 2.0;
     this.composer.addPass(this.outlinePass);
+
+    // Set up antialiasing.
+    this.fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+    const pixelRatio = this.renderer.getPixelRatio();
+    this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (this.container.offsetWidth * pixelRatio);
+    this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.offsetHeight * pixelRatio);
+    this.composer.addPass(this.fxaaPass); 
 
     if (this.debug) {
       this.axes = Axes.axes3D({
