@@ -16,6 +16,7 @@ import {Axes} from "./axes.js";
 import {Rect} from "./rect.js";
 import {Colors} from "./colors.js";
 import {Coords} from "./coords.js";
+import {DepthShader} from "./depth_shader.js";
 import {EventTracker} from "./event_tracker.js";
 import {Extruder} from "./extruder.js";
 import {FetchQueue} from "./fetch_queue.js";
@@ -84,6 +85,8 @@ class App {
     this.infoDetailsContent = document.getElementById("info-details-content");
     this.infoDetailsClose = document.getElementById("info-details-close");
     this.infoDetailsDisplayed = false;
+
+    this.urlParams = new URLSearchParams(window.location.search);
 
     // map whose keys are bbox strings, value is an object giving details about the corresponding data tile
     this.bBoxStringToSceneTileDetails = {
@@ -693,22 +696,53 @@ class App {
 
     this.scene.add(this.camera);
 
-    this.composer = new THREE.EffectComposer(this.renderer);
+    // Set up render target for holding depth information.
+    this.depthRenderTarget = new THREE.WebGLRenderTarget( this.container.offsetWidth, this.container.offsetHeight );
+    this.depthRenderTarget.texture.format = THREE.RGBFormat;
+    this.depthRenderTarget.texture.minFilter = THREE.NearestFilter;
+    this.depthRenderTarget.texture.magFilter = THREE.NearestFilter;
+    this.depthRenderTarget.texture.generateMipmaps = false;
+    this.depthRenderTarget.stencilBuffer = false;
+    this.depthRenderTarget.depthBuffer = true;
+    this.depthRenderTarget.depthTexture = new THREE.DepthTexture();
+    this.depthRenderTarget.depthTexture.type = THREE.UnsignedShortType;
+
+    this.composer = new THREE.EffectComposer(this.renderer, this.depthRenderTarget);
     this.renderPass = new THREE.RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
 
+    // Set up copy pass. Copies into write buffer, which can be used in calculating depth in this.depthPass.
+    this.copyPass = new THREE.ShaderPass(THREE.CopyShader);
+    this.composer.addPass(this.copyPass);
+
+    // Render to screen.
+    var renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBuffer: false };
+    this.screenRenderTarget = new THREE.WebGLRenderTarget( this.container.offsetWidth, this.container.offsetHeight, renderTargetParameters );
+    this.composerFinal = new THREE.EffectComposer(this.renderer, this.screenRenderTarget);
+    const renderPass = new THREE.RenderPass(this.scene, this.camera );
+    this.composerFinal.addPass(renderPass)
+
+    // Set up outline pass.
     this.outlinePass = new THREE.OutlinePass(new THREE.Vector2(this.container.offsetWidth, this.container.offsetHeight), this.scene, this.camera);
     this.outlinePass.edgeStrength = 5.0;
     this.outlinePass.edgeGlow = 0.5;
     this.outlinePass.edgeThickness = 2.0;
-    this.composer.addPass(this.outlinePass);
+    this.composerFinal.addPass(this.outlinePass);
 
-    // Set up antialiasing.
+    // Set up antialiasing pass.
     this.fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
     const pixelRatio = this.renderer.getPixelRatio();
     this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (this.container.offsetWidth * pixelRatio);
     this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.offsetHeight * pixelRatio);
-    this.composer.addPass(this.fxaaPass); 
+    this.composerFinal.addPass(this.fxaaPass);
+
+    if (this.urlParams.get('depth')=='true') {
+      this.depthPass = new THREE.ShaderPass( DepthShader );
+      this.depthPass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
+      this.depthPass.needsSwap = true;
+      this.depthPass.renderToScreen = true;
+      this.composerFinal.addPass(this.depthPass);
+    }
 
     if (this.debug) {
       this.axes = Axes.axes3D({
@@ -977,7 +1011,24 @@ class App {
     requestAnimationFrame(() => {
       this.renderRequested = false;
 //      this.renderer.render( this.scene, this.camera );
-this.composer.render();
+
+    // this.renderer.setRenderTarget( this.depthRenderTarget  ); // For some reason, need this line.
+    // this.renderer.render( this.scene, this.camera ); // For some reason, need this line.
+    
+    // this.renderer.clearDepth(1);
+    this.composer.render();
+    // this.renderer.clear();
+    // this.renderer.clearDepth(1);
+    this.composerFinal.render();
+    // this.renderer.clear();
+
+    // Below works.
+    // this.renderer.setRenderTarget( this.target );
+    // this.renderer.render( this.scene, this.camera );
+    // postMaterial.uniforms.tDepth.value = this.target.depthTexture;
+    // this.renderer.setRenderTarget( null );
+    // this.renderer.render( postScene, postCamera );
+        
       //console.log([window.performance.memory.totalJSHeapSize, window.performance.memory.usedJSHeapSize]);
     });
   }
