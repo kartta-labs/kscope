@@ -21,6 +21,7 @@ import {EventTracker} from "./event_tracker.js";
 import {Extruder} from "./extruder.js";
 import {FetchQueue} from "./fetch_queue.js";
 import {Ground} from "./ground.js";
+import {HazeShader} from "./haze_shader.js";
 import {Settings} from "./settings.js";
 import {SkyBox} from "./skybox.js";
 import {Util} from "./util.js";
@@ -736,12 +737,22 @@ class App {
     this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.offsetHeight * pixelRatio);
     this.composerFinal.addPass(this.fxaaPass);
 
+    // Render depth pass if `depth=true` is in the URL parameters.
     if (this.urlParams.get('depth')=='true') {
       this.depthPass = new THREE.ShaderPass( DepthShader );
       this.depthPass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
       this.depthPass.needsSwap = true;
       this.depthPass.renderToScreen = true;
       this.composerFinal.addPass(this.depthPass);
+    }
+
+    // Render haze pass if `haze=true` is in the URL parameters.
+    if (this.urlParams.get('haze')=='true') {
+      this.hazePass = new THREE.ShaderPass( HazeShader );
+      this.hazePass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
+      this.hazePass.needsSwap = true;
+      this.hazePass.renderToScreen = true;
+      this.composerFinal.addPass(this.hazePass);
     }
 
     if (this.debug) {
