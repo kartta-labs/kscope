@@ -708,17 +708,20 @@ class App {
     this.depthRenderTarget.depthTexture = new THREE.DepthTexture();
     this.depthRenderTarget.depthTexture.type = THREE.UnsignedShortType;
 
-    this.composer = new THREE.EffectComposer(this.renderer, this.depthRenderTarget);
+    // Composer for preprocessing.
+    this.composerPreprocess = new THREE.EffectComposer(this.renderer, this.depthRenderTarget);
     this.renderPass = new THREE.RenderPass(this.scene, this.camera);
-    this.composer.addPass(this.renderPass);
+    this.composerPreprocess.addPass(this.renderPass);
 
     // Set up copy pass. Copies into write buffer, which can be used in calculating depth in this.depthPass.
     this.copyPass = new THREE.ShaderPass(THREE.CopyShader);
-    this.composer.addPass(this.copyPass);
+    this.composerPreprocess.addPass(this.copyPass);
 
     // Render to screen.
     var renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBuffer: false };
     this.screenRenderTarget = new THREE.WebGLRenderTarget( this.container.offsetWidth, this.container.offsetHeight, renderTargetParameters );
+
+    // Composer for rendering to the screen.
     this.composerFinal = new THREE.EffectComposer(this.renderer, this.screenRenderTarget);
     const renderPass = new THREE.RenderPass(this.scene, this.camera );
     this.composerFinal.addPass(renderPass)
@@ -737,9 +740,9 @@ class App {
     this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.offsetHeight * pixelRatio);
     this.composerFinal.addPass(this.fxaaPass);
 
-    // Render depth pass if the user has enabled debug in the settings
+    // Render depth pass if the user has enabled debug
     // and `depth=true` is in the URL parameters.
-    if (Settings.enableDepthDebug && this.urlParams.get('depth')=='true') {
+    if (this.debug && this.urlParams.get('depth')=='true') {
       this.depthPass = new THREE.ShaderPass( DepthShader );
       this.depthPass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
       this.depthPass.needsSwap = true;
@@ -1024,7 +1027,7 @@ class App {
       this.renderRequested = false;
 //      this.renderer.render( this.scene, this.camera );
 
-      this.composer.render();
+      this.composerPreprocess.render();
       this.composerFinal.render();
         
       //console.log([window.performance.memory.totalJSHeapSize, window.performance.memory.usedJSHeapSize]);
