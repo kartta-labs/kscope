@@ -737,8 +737,9 @@ class App {
     this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.container.offsetHeight * pixelRatio);
     this.composerFinal.addPass(this.fxaaPass);
 
-    // Render depth pass if `depth=true` is in the URL parameters.
-    if (this.urlParams.get('depth')=='true') {
+    // Render depth pass if the user has enabled debug in the settings
+    // and `depth=true` is in the URL parameters.
+    if (Settings.enableDepthDebug && this.urlParams.get('depth')=='true') {
       this.depthPass = new THREE.ShaderPass( DepthShader );
       this.depthPass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
       this.depthPass.needsSwap = true;

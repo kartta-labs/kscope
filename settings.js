@@ -115,6 +115,11 @@ let Settings = {
   // pixel height and width of the in-memory canvas used as the
   // texture for the ground square; should be a power of 2:
   'groundTextureSize': 4096,
+
+  // Enables ability to view depth buffer in the browser by adding
+  // depth=true
+  // in the URL parameters.
+  'enableDepthDebug': true,
 };
 
 export {Settings};
