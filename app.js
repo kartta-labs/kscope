@@ -1012,22 +1012,8 @@ class App {
       this.renderRequested = false;
 //      this.renderer.render( this.scene, this.camera );
 
-    // this.renderer.setRenderTarget( this.depthRenderTarget  ); // For some reason, need this line.
-    // this.renderer.render( this.scene, this.camera ); // For some reason, need this line.
-    
-    // this.renderer.clearDepth(1);
-    this.composer.render();
-    // this.renderer.clear();
-    // this.renderer.clearDepth(1);
-    this.composerFinal.render();
-    // this.renderer.clear();
-
-    // Below works.
-    // this.renderer.setRenderTarget( this.target );
-    // this.renderer.render( this.scene, this.camera );
-    // postMaterial.uniforms.tDepth.value = this.target.depthTexture;
-    // this.renderer.setRenderTarget( null );
-    // this.renderer.render( postScene, postCamera );
+      this.composer.render();
+      this.composerFinal.render();
         
       //console.log([window.performance.memory.totalJSHeapSize, window.performance.memory.usedJSHeapSize]);
     });
