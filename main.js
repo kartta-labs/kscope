@@ -35,6 +35,8 @@ Util.setOptionFromUrlParams(options, params, "lon", parseFloat);
 Util.setOptionFromUrlParams(options, params, "lat", parseFloat);
 Util.setOptionFromUrlParams(options, params, "pitch", parseFloat);
 Util.setOptionFromUrlParams(options, params, "yaw", parseFloat);
+Util.setOptionFromUrlParams(options, params, "haze", Util.stringToBoolean);
+Util.setOptionFromUrlParams(options, params, "depth", Util.stringToBoolean);
 
 const app = new App(document.getElementById('viewport'), options);
 
