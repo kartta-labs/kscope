@@ -39,6 +39,8 @@ class App {
     this.speed = ('speed' in options) ? options['speed'] : Settings.speed;
     this.debug = ('debug' in options) ? options['debug'] : Settings.debug;
     this.year = ('year' in options) ? options['year'] : Settings.year;
+    this.haze = ('haze' in options) ? options['haze'] : Settings.haze;
+    this.depth = ('depth' in options) ? options['depth'] : Settings.depth;
     const defaultCameraSceneX = ('eyex' in options) ? options['eyex'] : Settings.eyex;
     const defaultCameraSceneZ = ('eyez' in options) ? options['eyez'] : Settings.eyez;
 
@@ -86,8 +88,6 @@ class App {
     this.infoDetailsContent = document.getElementById("info-details-content");
     this.infoDetailsClose = document.getElementById("info-details-close");
     this.infoDetailsDisplayed = false;
-
-    this.urlParams = new URLSearchParams(window.location.search);
 
     // map whose keys are bbox strings, value is an object giving details about the corresponding data tile
     this.bBoxStringToSceneTileDetails = {
@@ -742,7 +742,7 @@ class App {
 
     // Render depth pass if the user has enabled debug
     // and `depth=true` is in the URL parameters.
-    if (this.debug && this.urlParams.get('depth')=='true') {
+    if (this.debug && this.depth) {
       this.depthPass = new THREE.ShaderPass( DepthShader );
       this.depthPass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
       this.depthPass.needsSwap = true;
@@ -751,7 +751,7 @@ class App {
     }
 
     // Render haze pass if `haze=true` is in the URL parameters.
-    if (this.urlParams.get('haze')=='true') {
+    if (this.haze) {
       this.hazePass = new THREE.ShaderPass( HazeShader );
       this.hazePass.uniforms['tDepth'].value = this.depthRenderTarget.depthTexture;
       this.hazePass.needsSwap = true;
